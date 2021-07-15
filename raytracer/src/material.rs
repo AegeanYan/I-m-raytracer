@@ -66,6 +66,13 @@ impl Metal{
             albedo:Vec3::new(0.0 , 0.0 , 0.0),
         }
     }
+
+    pub fn news(albedo:Vec3 , fuzz:f64)->Self{
+        Self{
+            albedo:albedo,
+            fuzz:fuzz,
+        }
+    }
 }
 
 #[derive(Clone, Copy)]
@@ -117,6 +124,12 @@ impl Dielectric{
         let mut r0:f64 = (1.0 - ref_idx) / (1.0 + ref_idx);
         r0 *= r0;
         return r0 + (1.0 - r0) * (1.0 - cosine).powf(5.0);
+    }
+
+    pub fn new(ref_idx:f64)->Self{
+        Self{
+            ref_idx:ref_idx,
+        }
     }
 }
 
