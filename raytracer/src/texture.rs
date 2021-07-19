@@ -1,6 +1,8 @@
 use crate::rtweekend;
 use crate::Vec3;
 use std::sync::Arc;
+use crate::perlin;
+use crate::perlin::Perlin;
 
 pub trait Texture {
     fn value(&self , u:f64 , v:f64 , p:&mut Vec3) -> Vec3;
@@ -44,5 +46,23 @@ impl CheckerTexture{
             odd: Arc::new(SolidColor::new(c2)),
             even: Arc::new(SolidColor::new(c1)),
         }
+    }
+}
+
+pub struct NoiseTexture {
+    pub noise:perlin::Perlin,
+}
+
+impl NoiseTexture{
+    pub fn new0()->Self{
+        Self{
+            noise:Perlin::new(),
+        }
+    }
+}
+
+impl Texture for NoiseTexture{
+    fn value(&self, u: f64, v: f64, p: &mut Vec3) -> Vec3 {
+        return Vec3::new(1.0 , 1.0 , 1.0) * self.noise.noise(*p);
     }
 }

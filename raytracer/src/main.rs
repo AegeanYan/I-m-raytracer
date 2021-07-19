@@ -8,6 +8,7 @@ mod vec3;
 mod AABB;
 //mod BVH;
 mod texture;
+mod perlin;
 
 use crate::camera::Camera;
 use crate::hit::{HitRecord, Hittable, HittableList, Sphere};
@@ -18,7 +19,7 @@ use std::sync::Arc;
 pub use vec3::Ray;
 pub use vec3::Vec3;
 use crate::moving_sphere::MovingSphere;
-use crate::texture::CheckerTexture;
+use crate::texture::{CheckerTexture, NoiseTexture};
 // fn main() {
 //     let x = Vec3::new(1.0, 1.0, 1.0);
 //     println!("{:?}", x);
@@ -183,11 +184,41 @@ fn main() {
     // let vertical:Vec3 = Vec3::new(0.0 , viewport_height , 0.0);
 
     // let cam:Camera = Camera::new(); //四球
-    let lookfrom = Vec3::new(13.0, 2.0, 3.0);
-    let lookat = Vec3::new(0.0, 0.0, 0.0);
-    let vup = Vec3::new(0.0, 1.0, 0.0);
-    let dist_to_focus = 10.0;
-    let aperture = 0.1;
+    // let lookfrom = Vec3::new(13.0, 2.0, 3.0);
+    // let lookat = Vec3::new(0.0, 0.0, 0.0);
+    // let vup = Vec3::new(0.0, 1.0, 0.0);
+    // let dist_to_focus = 10.0;
+    // let aperture = 0.1;
+
+    let lookfrom:Vec3;
+    let lookat:Vec3;
+    let mut vfov:f64 = 40.0;
+    let mut aperture:f64 = 0.0;
+    let op = 2;
+    match op {
+        0 => {
+            world = random_scene();
+            lookfrom = Vec3::new(13.0 , 2.0 , 3.0);
+            lookat = Vec3::new(0.0 , 0.0 , 0.0);
+            vfov = 20.0;
+            aperture = 0.1;
+        }
+        1 => {
+            world = two_spheres();
+            lookfrom = Vec3::new(13.0 , 2.0 , 3.0);
+            lookat = Vec3::new(0.0 , 0.0 , 0.0);
+            vfov = 20.0;
+        }
+        _ => {
+            world = two_perlin_spheres();
+            lookfrom = Vec3::new(13.0 , 2.0 , 3.0);
+            lookat = Vec3::new(0.0 , 0.0 , 0.0);
+            vfov = 20.0;
+        }
+    }
+    let vup = Vec3::new(0.0 , 1.0 , 0.0);
+    let dist_to_focus:f64 = 10.0;
+
     let cam: Camera = Camera::camera_from_where(
         lookfrom,
         lookat,
@@ -426,4 +457,45 @@ fn random_scene() -> HittableList {
     };
     world.add(Arc::new(mat3));
     return world;
+}
+
+pub fn two_spheres() ->HittableList{
+    let mut objects:HittableList = HittableList { objects: vec![] };
+
+    let checker = Arc::new(CheckerTexture::new(Vec3::new(0.2 , 0.3 , 0.1) , Vec3::new(0.9 , 0.9 , 0.9)));
+    let sph1:Sphere = Sphere{
+        center: Vec3::new(0.0 , -10.0 , 0.0),
+        radius: 10.0,
+        mat_ptr: Arc::new(Lambertian::news(checker.clone())),
+    };
+    let sph2:Sphere = Sphere{
+        center: Vec3::new(0.0 , 10.0 , 0.0),
+        radius: 10.0,
+        mat_ptr: Arc::new(Lambertian::news(checker.clone())),
+    };
+
+    objects.add(Arc::new(sph1));
+    objects.add(Arc::new(sph2));
+    
+    return objects;
+}
+
+pub fn two_perlin_spheres()->HittableList{
+    let mut objects:HittableList = HittableList { objects: vec![] };
+    let pertext = Arc::new(NoiseTexture::new0());
+    let sph1:Sphere = Sphere{
+        center: Vec3::new(0.0 , -1000.0 , 0.0),
+        radius: 1000.0,
+        mat_ptr: Arc::new(Lambertian::news(pertext.clone())),
+    };
+    let sph2:Sphere = Sphere{
+        center: Vec3::new(0.0 , 2.0 , 0.0),
+        radius: 2.0,
+        mat_ptr: Arc::new(Lambertian::news(pertext.clone())),
+    };
+
+    objects.add(Arc::new(sph1));
+    objects.add(Arc::new(sph2));
+
+    return objects;
 }
