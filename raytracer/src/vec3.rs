@@ -14,6 +14,16 @@ pub struct Vec3 {
 pub struct Ray {
     pub orig:Vec3,
     pub dir:Vec3,
+    pub time:f64,
+}
+impl Ray{
+    fn new(orig:Vec3 , dir:Vec3 , time:f64)->Self{
+        Self{
+            orig: orig,
+            dir:dir,
+            time:time,
+        }
+    }
 }
 impl Ray{
     pub fn at(&self , t:f64)->Vec3{

@@ -1,6 +1,4 @@
-use crate::material;
 use crate::{Vec3 , Ray};
-use std::vec;
 use crate::material::{Material, Metal};
 use std::sync::Arc;
 

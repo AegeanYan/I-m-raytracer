@@ -1,4 +1,4 @@
-use crate::{rtweekend, random_double};
+use crate::{ random_double};
 use crate::Ray;
 use crate::hit;
 use crate::Vec3;
@@ -25,7 +25,8 @@ impl Material for Lambertian{
         let scatter_direction:Vec3 = rec.normal + Vec3::random_unit_vector();
         let ra = Ray{
             orig: rec.p,
-            dir: scatter_direction
+            dir: scatter_direction,
+            time: scattered.time
         };
         scattered.dir = ra.dir;
         scattered.orig = ra.orig;
@@ -49,13 +50,14 @@ impl Material for Metal{
         let ra = Ray{
             orig: rec.p,
             dir: reflected + Vec3::random_in_unit_sphere() * self.fuzz,
+            time: 0.0,
         };
         scattered.dir = ra.dir;
         scattered.orig = ra.orig;
         attenuation.x = self.albedo.x;
         attenuation.y = self.albedo.y;
         attenuation.z = self.albedo.z;
-        return (Vec3::dot(scattered.dir , rec.normal) > 0.0);
+        return Vec3::dot(scattered.dir , rec.normal) > 0.0;
     }
 }
 

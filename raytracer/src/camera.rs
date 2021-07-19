@@ -1,17 +1,16 @@
-use crate::{rtweekend, Vec3, Ray, degrees_to_radians};
-use image::imageops::grayscale;
-use std::collections::hash_map::Entry::Vacant;
-use std::ops::Add;
+use crate::{Vec3, Ray, degrees_to_radians, random_double_lim};
 
 pub struct Camera {
     pub origin:Vec3,
     pub lower_left_corner:Vec3,
     pub horizontal:Vec3,
     pub vertical:Vec3,
-    pub lens_radius:f64,
     pub u:Vec3,
     pub v:Vec3,
     pub w:Vec3,
+    pub lens_radius:f64,
+    pub time0:f64,
+    pub time1:f64,
 }
 
 impl Camera{
@@ -20,7 +19,6 @@ impl Camera{
         let viewport_height:f64 = 2.0;
         let viewport_width:f64 = aspect_ratio * viewport_height;
         let focal_length:f64 = 1.0;
-
         Self{
             origin: Vec3 {
                 x: 0.0,
@@ -57,7 +55,9 @@ impl Camera{
                 x: 0.0,
                 y: 0.0,
                 z: 0.0
-            }
+            },
+            time0 : 0.0,
+            time1 : 0.0,
         }
     }
     
@@ -67,6 +67,8 @@ impl Camera{
         let ray = Ray{
             orig: self.origin + offset,
             dir: self.lower_left_corner + self.horizontal * s + self.vertical * t - self.origin - offset,
+            //time:random_double_lim(self.time0 , self.time1),
+            time:0.0,
         };
         return ray;
     }
@@ -88,6 +90,7 @@ impl Camera{
             vertical:verti,
             lower_left_corner:llc,
             lens_radius:0.0,
+            time0: 0.0,
             u: Vec3 {
                 x: 0.0,
                 y: 0.0,
@@ -102,11 +105,12 @@ impl Camera{
                 x: 0.0,
                 y: 0.0,
                 z: 0.0
-            }
+            },
+            time1: 0.0
         }
     }
 
-    pub fn camera_from_where(lookfrom:Vec3 , lookat:Vec3 , vup:Vec3 , vfov:f64 , aspect_ratio:f64 , aperture:f64 , focus_dist:f64)->Self{
+    pub fn camera_from_where(lookfrom:Vec3 , lookat:Vec3 , vup:Vec3 , vfov:f64 , aspect_ratio:f64 , aperture:f64 , focus_dist:f64 , time0:f64 , time1:f64)->Self{
         let theta:f64 = degrees_to_radians(vfov);
         let h = (theta / 2.0).tan();
         let viewport_height:f64 = 2.0 * h;
@@ -126,9 +130,11 @@ impl Camera{
             horizontal: hori,
             vertical: verti,
             lens_radius:aperture / 2.0,
+            time0: time0,
             w:ww,
             u:uu,
             v:vv,
+            time1: time1,
         }
     }
 }

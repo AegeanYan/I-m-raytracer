@@ -9,7 +9,6 @@ use image::{ImageBuffer, RgbImage};
 pub use vec3::Vec3;
 pub use vec3::Ray;
 pub use rtweekend::*;
-use std::f64::consts::PI;
 use crate::hit::{HittableList, Sphere, Hittable, HitRecord};
 use crate::material::{Material, Lambertian ,Metal,Dielectric};
 use crate::camera::Camera;
@@ -185,7 +184,7 @@ fn main(){
     let vup = Vec3::new(0.0 , 1.0 , 0.0);
     let dist_to_focus = 10.0;
     let aperture = 0.1;
-    let cam:Camera = Camera::camera_from_where(lookfrom , lookat , vup , 20.0 , 16.0 / 9.0 , aperture , dist_to_focus);
+    let cam:Camera = Camera::camera_from_where(lookfrom , lookat , vup , 20.0 , 16.0 / 9.0 , aperture , dist_to_focus , 0.0 , 0.0);
 
     // //视口左下角的坐标
     // let lower_left_corner:Vec3 = origin - horizontal / 2.0 - vertical / 2.0 - Vec3::new(0.0 , 0.0 , focal_length);
@@ -284,7 +283,8 @@ fn ray_color(r:Ray, world: &dyn Hittable , depth:u32) -> Vec3{
                 x: 0.0,
                 y: 0.0,
                 z: 0.0
-            }
+            },
+            time: 0.0,
         };
         let mut attenuation: Vec3 = Vec3 {
             x: 0.0,
