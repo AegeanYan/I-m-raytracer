@@ -1,18 +1,24 @@
+mod camera;
+mod hit;
+mod material;
+mod moving_sphere;
+mod rtweekend;
 #[allow(clippy::float_cmp)]
 mod vec3;
-mod hit;
-mod camera;
-mod rtweekend;
-mod material;
+mod AABB;
+//mod BVH;
+mod texture;
 
-use image::{ImageBuffer, RgbImage};
-pub use vec3::Vec3;
-pub use vec3::Ray;
-pub use rtweekend::*;
-use crate::hit::{HittableList, Sphere, Hittable, HitRecord};
-use crate::material::{Material, Lambertian ,Metal,Dielectric};
 use crate::camera::Camera;
+use crate::hit::{HitRecord, Hittable, HittableList, Sphere};
+use crate::material::{Dielectric, Lambertian, Material, Metal};
+use image::{ImageBuffer, RgbImage};
+pub use rtweekend::*;
 use std::sync::Arc;
+pub use vec3::Ray;
+pub use vec3::Vec3;
+use crate::moving_sphere::MovingSphere;
+use crate::texture::CheckerTexture;
 // fn main() {
 //     let x = Vec3::new(1.0, 1.0, 1.0);
 //     println!("{:?}", x);
@@ -40,18 +46,16 @@ use std::sync::Arc;
 //     bar.finish();
 // }
 
-fn main(){
-
-
+fn main() {
     //Image
-    const ASPECT_RATIO:f64 = 16.0/9.0;
-    const IMAGE_WIDTH:u32 = 400;
-    const IMAGE_HEIGHT:u32 = (IMAGE_WIDTH as f64/ ASPECT_RATIO) as u32;
+    const ASPECT_RATIO: f64 = 16.0 / 9.0;
+    const IMAGE_WIDTH: u32 = 400;
+    const IMAGE_HEIGHT: u32 = (IMAGE_WIDTH as f64 / ASPECT_RATIO) as u32;
     const SAMPLES_PER_PIXEL: u32 = 100;
-    const MAX_DEPTH:u32 = 50;
+    const MAX_DEPTH: u32 = 50;
     let mut img: RgbImage = ImageBuffer::new(IMAGE_WIDTH, IMAGE_HEIGHT);
     //World
-    let mut world:HittableList = random_scene();
+    let mut world: HittableList = random_scene();
     // let mg:Lambertian = Lambertian{
     //     albedo: Vec3 {
     //         x: 0.8,
@@ -179,46 +183,56 @@ fn main(){
     // let vertical:Vec3 = Vec3::new(0.0 , viewport_height , 0.0);
 
     // let cam:Camera = Camera::new(); //四球
-    let lookfrom = Vec3::new(12.0 , 2.0 , 3.0);
-    let lookat = Vec3::new(0.0 , 0.0 , 0.0);
-    let vup = Vec3::new(0.0 , 1.0 , 0.0);
+    let lookfrom = Vec3::new(13.0, 2.0, 3.0);
+    let lookat = Vec3::new(0.0, 0.0, 0.0);
+    let vup = Vec3::new(0.0, 1.0, 0.0);
     let dist_to_focus = 10.0;
     let aperture = 0.1;
-    let cam:Camera = Camera::camera_from_where(lookfrom , lookat , vup , 20.0 , 16.0 / 9.0 , aperture , dist_to_focus , 0.0 , 0.0);
+    let cam: Camera = Camera::camera_from_where(
+        lookfrom,
+        lookat,
+        vup,
+        20.0,
+        16.0 / 9.0,
+        aperture,
+        dist_to_focus,
+        0.0,
+        1.0,
+    );
 
     // //视口左下角的坐标
     // let lower_left_corner:Vec3 = origin - horizontal / 2.0 - vertical / 2.0 - Vec3::new(0.0 , 0.0 , focal_length);
 
     //Render
-    for j in (0 .. IMAGE_HEIGHT).rev(){
-        for i in 0 .. IMAGE_WIDTH {
-            let mut pixel_color:Vec3 = Vec3::new(0.0 , 0.0 , 0.0);
+    for j in (0..IMAGE_HEIGHT).rev() {
+        for i in 0..IMAGE_WIDTH {
+            let mut pixel_color: Vec3 = Vec3::new(0.0, 0.0, 0.0);
             let pixel = img.get_pixel_mut(i, IMAGE_HEIGHT - 1 - j);
             for k in 0..SAMPLES_PER_PIXEL {
-                let u:f64 = (i as f64 + random_double()) / ((IMAGE_WIDTH - 1) as f64);
-                let v:f64 = (j as f64 + random_double()) / ((IMAGE_HEIGHT - 1) as f64);
-                let r:Ray = cam.get_ray(u , v);
-                pixel_color += ray_color(r , &world ,MAX_DEPTH);
+                let u: f64 = (i as f64 + random_double()) / ((IMAGE_WIDTH - 1) as f64);
+                let v: f64 = (j as f64 + random_double()) / ((IMAGE_HEIGHT - 1) as f64);
+                let r: Ray = cam.get_ray(u, v);
+                pixel_color += ray_color(r, &world, MAX_DEPTH);
             }
-            *pixel = write_color(&pixel_color , SAMPLES_PER_PIXEL);
+            *pixel = write_color(&pixel_color, SAMPLES_PER_PIXEL);
         }
     }
     img.save("output/test.png").unwrap();
 }
-fn write_color(pixel_color:&Vec3 , samples_per_pixel:u32) -> image::Rgb<u8>{
-    let mut r:f64 = pixel_color.x;
-    let mut g:f64 = pixel_color.y;
-    let mut b:f64 = pixel_color.z;
+fn write_color(pixel_color: &Vec3, samples_per_pixel: u32) -> image::Rgb<u8> {
+    let mut r: f64 = pixel_color.x;
+    let mut g: f64 = pixel_color.y;
+    let mut b: f64 = pixel_color.z;
 
-    let scale:f64 = 1.0 / (samples_per_pixel as f64);
+    let scale: f64 = 1.0 / (samples_per_pixel as f64);
     r = (r * scale).sqrt();
     g = (g * scale).sqrt();
     b = (b * scale).sqrt();
 
-    let ir:u8 = (256.0 * rtweekend::clamp(r , 0.0 , 0.999)) as u8;
-    let ig:u8 = (256.0 * rtweekend::clamp(g , 0.0 , 0.999)) as u8;
-    let ib:u8 = (256.0 * rtweekend::clamp(b , 0.0 , 0.999)) as u8;
-    return image::Rgb([ir , ig , ib]);
+    let ir: u8 = (256.0 * rtweekend::clamp(r, 0.0, 0.999)) as u8;
+    let ig: u8 = (256.0 * rtweekend::clamp(g, 0.0, 0.999)) as u8;
+    let ib: u8 = (256.0 * rtweekend::clamp(b, 0.0, 0.999)) as u8;
+    return image::Rgb([ir, ig, ib]);
 }
 
 // fn ray_color(r:Ray) -> Vec3{
@@ -253,98 +267,123 @@ fn write_color(pixel_color:&Vec3 , samples_per_pixel:u32) -> image::Rgb<u8>{
 //     }
 // }
 
-fn ray_color(r:Ray, world: &dyn Hittable , depth:u32) -> Vec3{
-    let mut rec = HitRecord{
+fn ray_color(r: Ray, world: &dyn Hittable, depth: u32) -> Vec3 {
+    let mut rec = HitRecord {
         p: Vec3 {
             x: 0.0,
             y: 0.0,
-            z: 0.0
+            z: 0.0,
         },
         normal: Vec3 {
             x: 0.0,
             y: 0.0,
-            z: 0.0
+            z: 0.0,
         },
         mat_ptr: Arc::new(Metal::new()),
         t: 0.0,
+        u: 0.0,
+        v: 0.0,
         front_face: true,
     };
     if depth <= 0 {
-        return Vec3::new(0.0 , 0.0 , 0.0);
+        return Vec3::new(0.0, 0.0, 0.0);
     }
-    if world.hit(r , 0.001 , f64::INFINITY , &mut rec) {
+    if world.hit(r, 0.001, f64::INFINITY, &mut rec) {
         let mut scattered: Ray = Ray {
             orig: Vec3 {
                 x: 0.0,
                 y: 0.0,
-                z: 0.0
+                z: 0.0,
             },
             dir: Vec3 {
                 x: 0.0,
                 y: 0.0,
-                z: 0.0
+                z: 0.0,
             },
             time: 0.0,
         };
         let mut attenuation: Vec3 = Vec3 {
             x: 0.0,
             y: 0.0,
-            z: 0.0
+            z: 0.0,
         };
 
-        if rec.mat_ptr.scatter(r , rec.clone() ,&mut attenuation ,&mut scattered) {
-            return ray_color(scattered , world , depth - 1) * attenuation;
+        if rec
+            .mat_ptr
+            .scatter(r, rec.clone(), &mut attenuation, &mut scattered)
+        {
+            return ray_color(scattered, world, depth - 1) * attenuation;
         }
-        return Vec3::new(0.0 , 0.0 ,0.0);
+        return Vec3::new(0.0, 0.0, 0.0);
     }
-    let unit_direction:Vec3 = Vec3::unit_vector(r.dir);
-    let t:f64 = 0.5 * (unit_direction.y + 1.0);
+    let unit_direction: Vec3 = Vec3::unit_vector(r.dir);
+    let t: f64 = 0.5 * (unit_direction.y + 1.0);
     //线性插值
-    return Vec3::new(1.0 , 1.0 , 1.0) * (1.0 - t) + Vec3::new(0.5 , 0.7 , 1.0) * t;
+    return Vec3::new(1.0, 1.0, 1.0) * (1.0 - t) + Vec3::new(0.5, 0.7, 1.0) * t;
 }
 
-fn random_scene() -> HittableList{
-    let mut world:HittableList = HittableList { objects: vec![] };
-    let ground_material = Arc::new(Lambertian::new(Vec3::new(0.5 , 0.5 , 0.5)));
+fn random_scene() -> HittableList {
+    let mut world: HittableList = HittableList { objects: vec![] };
+    // let ground_material = Arc::new(Lambertian::new(Vec3::new(0.5, 0.5, 0.5)));
+    // let gd: Sphere = Sphere {
+    //     center: Vec3 {
+    //         x: 0.0,
+    //         y: -1000.0,
+    //         z: 0.0,
+    //     },
+    //     radius: 1000.0,
+    //     mat_ptr: ground_material,
+    // };
+    // world.add(Arc::new(gd));
+    let checker = Arc::new(CheckerTexture::new(Vec3::new(0.2 ,0.3 , 0.1) , Vec3::new(0.9 , 0.9 , 0.9)));
     let gd:Sphere = Sphere{
-        center: Vec3 {
-            x: 0.0,
-            y: -1000.0,
-            z: 0.0
-        },
+        center: Vec3::new(0.0 , -1000.0 , 0.0),
         radius: 1000.0,
-        mat_ptr: ground_material
+        mat_ptr: Arc::new(Lambertian::news(checker)),
     };
     world.add(Arc::new(gd));
     for a in -11..11 {
         for b in -11..11 {
-            let choose_mat:f64 = random_double();
-            let center:Vec3 = Vec3::new(a as f64 + 0.9 * random_double() , 0.2 , b as f64 + 0.9 * random_double());
-            if (center - Vec3::new(4.0 , 0.2 , 0.0)).length() > 0.9 {
-                let sphere_material:Arc<dyn Material>;
+            let choose_mat: f64 = random_double();
+            let center: Vec3 = Vec3::new(
+                a as f64 + 0.9 * random_double(),
+                0.2,
+                b as f64 + 0.9 * random_double(),
+            );
+            if (center - Vec3::new(4.0, 0.2, 0.0)).length() > 0.9 {
+                let sphere_material: Arc<dyn Material>;
                 if choose_mat < 0.8 {
-                    let albedo = Vec3::new(random_double() , random_double() , random_double()) * Vec3::new(random_double() , random_double() , random_double());
+                    let albedo = Vec3::new(random_double(), random_double(), random_double())
+                        * Vec3::new(random_double(), random_double(), random_double());
                     sphere_material = Arc::new(Lambertian::new(albedo));
-                    let dif:Sphere = Sphere{
-                        center:center,
+                    let center2:Vec3 = center + Vec3::new(0.0 , random_double_lim(0.0 , 0.5) , 0.0);
+                    let ms:MovingSphere = MovingSphere{
+                        center0: center,
+                        center1: center2,
+                        time0: 0.0,
+                        time1: 1.0,
                         radius: 0.2,
-                        mat_ptr:sphere_material,
+                        mat_ptr: sphere_material,
                     };
-                    world.add(Arc::new(dif));
-                }else if choose_mat < 0.95 {
-                    let albedo:Vec3 = Vec3::new(random_double_lim(0.5 , 1.0) , random_double_lim(0.5 , 1.0) , random_double_lim(0.5 , 1.0));
-                    let fuzz:f64 = random_double_lim(0.0 , 0.5);
-                    sphere_material = Arc::new(Metal::news(albedo , fuzz));
-                    let met:Sphere = Sphere{
-                        center:center,
+                    world.add(Arc::new(ms));
+                } else if choose_mat < 0.95 {
+                    let albedo: Vec3 = Vec3::new(
+                        random_double_lim(0.5, 1.0),
+                        random_double_lim(0.5, 1.0),
+                        random_double_lim(0.5, 1.0),
+                    );
+                    let fuzz: f64 = random_double_lim(0.0, 0.5);
+                    sphere_material = Arc::new(Metal::news(albedo, fuzz));
+                    let met: Sphere = Sphere {
+                        center: center,
                         radius: 0.2,
                         mat_ptr: sphere_material,
                     };
                     world.add(Arc::new(met));
-                }else {
+                } else {
                     sphere_material = Arc::new(Dielectric::new(1.5));
-                    let gla:Sphere = Sphere{
-                        center:center,
+                    let gla: Sphere = Sphere {
+                        center: center,
                         radius: 0.2,
                         mat_ptr: sphere_material,
                     };
@@ -354,22 +393,34 @@ fn random_scene() -> HittableList{
         }
     }
     let material1 = Arc::new(Dielectric::new(1.5));
-    let mat1:Sphere = Sphere{
-        center: Vec3 {x:0.0 , y:1.0 , z:0.0},
+    let mat1: Sphere = Sphere {
+        center: Vec3 {
+            x: 0.0,
+            y: 1.0,
+            z: 0.0,
+        },
         radius: 1.0,
         mat_ptr: material1,
     };
     world.add(Arc::new(mat1));
-    let material2 = Arc::new(Lambertian::new(Vec3::new(0.4 , 0.2 , 0.1)));
-    let mat2:Sphere = Sphere{
-        center: Vec3 {x:-4.0 , y:1.0 , z:0.0},
+    let material2 = Arc::new(Lambertian::new(Vec3::new(0.4, 0.2, 0.1)));
+    let mat2: Sphere = Sphere {
+        center: Vec3 {
+            x: -4.0,
+            y: 1.0,
+            z: 0.0,
+        },
         radius: 1.0,
         mat_ptr: material2,
     };
     world.add(Arc::new(mat2));
-    let material3 = Arc::new(Metal::news(Vec3::new(0.7 , 0.6 , 0.5) , 0.0));
-    let mat3:Sphere = Sphere{
-        center: Vec3 {x:4.0 , y:1.0 , z:0.0},
+    let material3 = Arc::new(Metal::news(Vec3::new(0.7, 0.6, 0.5), 0.0));
+    let mat3: Sphere = Sphere {
+        center: Vec3 {
+            x: 4.0,
+            y: 1.0,
+            z: 0.0,
+        },
         radius: 1.0,
         mat_ptr: material3,
     };
