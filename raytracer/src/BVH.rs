@@ -7,13 +7,19 @@ use crate::hit::{Hittable, HitRecord, HittableList};
 use std::vec;
 use std::mem::swap;
 use crate::moving_sphere::MovingSphere;
+use std::cmp::Ordering;
 
 pub struct BvhNode{
     pub left:Arc<dyn Hittable>,
     pub right:Arc<dyn Hittable>,
     pub box0:Aabb,
 }
-
+impl BvhNode{
+    pub fn new(mut list:HittableList, time0:f64, time1:f64){
+        let mut len = list.objects.len();
+        BvhNode::new0(&mut list.objects , 0 , len , time0 , time1);
+    }
+}
 impl Hittable for BvhNode{
     fn hit(&self, r: Ray, t_min: f64, t_max: f64, rec: &mut HitRecord) -> bool {
         if !self.box0.hit(r , t_min , t_max) {
@@ -30,14 +36,15 @@ impl Hittable for BvhNode{
     }
 
     fn bounding_box(&self, time0: f64, time1: f64, output_box: &mut Aabb) -> bool {
-        output_box.maximum = self.box0.maximum;
-        output_box.minimum = self.box0.minimum;
+        // output_box.maximum = self.box0.maximum;
+        // output_box.minimum = self.box0.minimum;
+        *output_box = self.box0;
         return true;
     }
 }
 
 impl BvhNode{
-    pub fn new(src_objects:& mut Vec<Arc<dyn Hittable>> , start:usize , end:usize , time0:f64 , time1:f64)->Self{
+    pub fn new0(src_objects:& mut Vec<Arc<dyn Hittable>> , start:usize , end:usize , time0:f64 , time1:f64)->Self{
         let mut objects = src_objects.clone();
         let axis:i32 = random_int(0 , 2);
         let comparator = match axis {
@@ -63,11 +70,21 @@ impl BvhNode{
                 }
             }
             _ => {
-                quick_sort(&mut objects , start , end , comparator);
+                //quick_sort(&mut objects , start , end , comparator);
+                objects.sort_by(|a,b|{
+                    let mut xi = Aabb::new(Vec3::new(0.0, 0.0, 0.0), Vec3::new(0.0, 0.0, 0.0));
+                    a.bounding_box(time0 , time1 ,&mut xi);
+                    let x = xi.minimum.get(axis);
+                    let mut yi = Aabb::new(Vec3::new(0.0, 0.0, 0.0), Vec3::new(0.0, 0.0, 0.0));
+                    b.bounding_box(time0 , time1 , &mut yi);
+                    let y = yi.minimum.get(axis);
+                    x.partial_cmp(&y).unwrap()
+                }
+                );
 
                 let mid = start + object_span / 2;
-                lt = Arc::new(BvhNode::new(&mut objects , start , mid , time0 , time1));
-                rt = Arc::new(BvhNode::new(&mut objects , mid , end , time0 , time1));
+                lt = Arc::new(BvhNode::new0(&mut objects , start , mid , time0 , time1));
+                rt = Arc::new(BvhNode::new0(&mut objects , mid , end , time0 , time1));
             }
         }
         let mut box_left:Aabb = Aabb {
@@ -150,26 +167,26 @@ impl BvhNode{
     }
 }
 
-fn quick_sort(mut arr:& mut Vec<Arc<dyn Hittable>> , l:usize , r:usize , func:fn(Arc<dyn Hittable> , Arc<dyn Hittable>)->bool){
-    let mut left:usize = l;
-    let mut right:usize = r;
-    let mut mid:Arc<dyn Hittable> = arr[((l + r) >> 1) as usize].clone();
-    while left < right {
-        while func(arr[left as usize].clone() , mid.clone()) {
-            left += 1;
-        }
-        while func(mid.clone() , arr[right as usize].clone()) {
-            right += 1;
-        }
-        if left <= right {
-            swap(&mut arr[left] , &mut arr[right]);
-            // let temp:&Arc<dyn Hittable> = &arr[left];
-            // &arr[left] = &arr[right];
-            // &arr[right] = &temp;
-            left += 1;
-            right += 1;
-        }
-    }
-    if right > l {quick_sort(arr , l , right , func)};
-    if left < r {quick_sort(arr , left , r , func) };
-}
+// fn quick_sort(mut arr:& mut Vec<Arc<dyn Hittable>> , l:usize , r:usize , func:fn(Arc<dyn Hittable> , Arc<dyn Hittable>)->bool){
+//     let mut left:usize = l;
+//     let mut right:usize = r;
+//     let mut mid:Arc<dyn Hittable> = arr[((l + r) >> 1) as usize].clone();
+//     while left < right {
+//         while func(arr[left as usize].clone() , mid.clone()) {
+//             left += 1;
+//         }
+//         while func(mid.clone() , arr[right as usize].clone()) {
+//             right += 1;
+//         }
+//         if left <= right {
+//             swap(&mut arr[left] , &mut arr[right]);
+//             // let temp:&Arc<dyn Hittable> = &arr[left];
+//             // &arr[left] = &arr[right];
+//             // &arr[right] = &temp;
+//             left += 1;
+//             right += 1;
+//         }
+//     }
+//     if right > l {quick_sort(arr , l , right , func)};
+//     if left < r {quick_sort(arr , left , r , func) };
+// }

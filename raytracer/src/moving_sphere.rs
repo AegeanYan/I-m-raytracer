@@ -3,9 +3,9 @@ use crate::material;
 use crate::Hittable;
 use crate::Material;
 use crate::Vec3;
-use crate::{hit, Ray , AABB::Aabb};
+use crate::{hit, Ray, AABB::Aabb};
+use std::cmp::{max, min};
 use std::sync::Arc;
-use std::cmp::{min, max};
 
 pub struct MovingSphere {
     pub center0: Vec3,
@@ -22,12 +22,20 @@ impl MovingSphere {
             + (self.center1 - self.center0) * (time - self.time0) / (self.time1 - self.time0);
     }
 
-    pub fn surrounding_box(box0:Aabb , box1:Aabb)->Aabb{
-        let small:Vec3 = Vec3::new(box0.minimum.x.min(box1.minimum.x) , box0.minimum.y.min(box1.minimum.y) , box0.minimum.z.min(box1.minimum.z));
-        let big:Vec3 = Vec3::new(box0.maximum.x.max(box1.maximum.x) , box0.maximum.y.max(box1.maximum.y) , box0.maximum.z.max(box1.maximum.z));
-        let ab:Aabb = Aabb{
+    pub fn surrounding_box(box0: Aabb, box1: Aabb) -> Aabb {
+        let small: Vec3 = Vec3::new(
+            box0.minimum.x.min(box1.minimum.x),
+            box0.minimum.y.min(box1.minimum.y),
+            box0.minimum.z.min(box1.minimum.z),
+        );
+        let big: Vec3 = Vec3::new(
+            box0.maximum.x.max(box1.maximum.x),
+            box0.maximum.y.max(box1.maximum.y),
+            box0.maximum.z.max(box1.maximum.z),
+        );
+        let ab: Aabb = Aabb {
             minimum: small,
-            maximum: big
+            maximum: big,
         };
         return ab;
     }
@@ -64,36 +72,40 @@ impl Hittable for MovingSphere {
     }
 
     fn bounding_box(&self, time0: f64, time1: f64, output_box: &mut Aabb) -> bool {
-        let mut box0:Aabb = Aabb {
+        let mut box0: Aabb = Aabb {
             minimum: Vec3 {
                 x: 0.0,
                 y: 0.0,
-                z: 0.0
+                z: 0.0,
             },
             maximum: Vec3 {
                 x: 0.0,
                 y: 0.0,
-                z: 0.0
-            }
+                z: 0.0,
+            },
         };
-        let mut box1:Aabb = Aabb {
+        let mut box1: Aabb = Aabb {
             minimum: Vec3 {
                 x: 0.0,
                 y: 0.0,
-                z: 0.0
+                z: 0.0,
             },
             maximum: Vec3 {
                 x: 0.0,
                 y: 0.0,
-                z: 0.0
-            }
+                z: 0.0,
+            },
         };
-        box0.minimum = MovingSphere::center(self ,time0) - Vec3::new(self.radius , self.radius , self.radius);
-        box0.maximum = MovingSphere::center(self , time0) + Vec3::new(self.radius , self.radius , self.radius);
-        box1.minimum = MovingSphere::center(self ,time1) - Vec3::new(self.radius , self.radius , self.radius);
-        box1.maximum = MovingSphere::center(self , time1) + Vec3::new(self.radius , self.radius , self.radius);
-        output_box.minimum = MovingSphere::surrounding_box(box0 , box1).minimum;
-        output_box.maximum = MovingSphere::surrounding_box(box0 , box1).maximum;
+        box0.minimum =
+            MovingSphere::center(self, time0) - Vec3::new(self.radius, self.radius, self.radius);
+        box0.maximum =
+            MovingSphere::center(self, time0) + Vec3::new(self.radius, self.radius, self.radius);
+        box1.minimum =
+            MovingSphere::center(self, time1) - Vec3::new(self.radius, self.radius, self.radius);
+        box1.maximum =
+            MovingSphere::center(self, time1) + Vec3::new(self.radius, self.radius, self.radius);
+        output_box.minimum = MovingSphere::surrounding_box(box0, box1).minimum;
+        output_box.maximum = MovingSphere::surrounding_box(box0, box1).maximum;
         return true;
     }
 }

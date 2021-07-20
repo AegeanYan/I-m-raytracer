@@ -1,11 +1,11 @@
 use crate::hit;
 use crate::hit::HitRecord;
 use crate::random_double;
+use crate::texture::SolidColor;
+use crate::texture::Texture;
 use crate::Ray;
 use crate::Vec3;
 use std::sync::Arc;
-use crate::texture::Texture;
-use crate::texture::SolidColor;
 
 pub trait Material {
     fn scatter(
@@ -15,6 +15,9 @@ pub trait Material {
         attenuation: &mut Vec3,
         scattered: &mut Ray,
     ) -> bool;
+    fn emitted(&self, u: f64, v: f64, p: &mut Vec3) -> Vec3 {
+        return Vec3::new(0.0, 0.0, 0.0);
+    }
 }
 
 pub struct Lambertian {
@@ -25,9 +28,9 @@ impl Lambertian {
     pub fn news(a: Arc<dyn Texture>) -> Self {
         Self { albedo: a }
     }
-    pub fn new(a: Vec3)->Self{
-        Self{
-            albedo:Arc::new(SolidColor::new(a)),
+    pub fn new(a: Vec3) -> Self {
+        Self {
+            albedo: Arc::new(SolidColor::new(a)),
         }
     }
 }
@@ -111,7 +114,8 @@ pub struct Dielectric {
 }
 
 impl Material for Dielectric {
-    fn scatter(//我好像把几种方式重在一起了，之后可能会出问题
+    fn scatter(
+        //我好像把几种方式重在一起了，之后可能会出问题
         &self,
         r_in: Ray,
         rec: HitRecord,
@@ -164,5 +168,68 @@ impl Dielectric {
 
     pub fn new(ref_idx: f64) -> Self {
         Self { ref_idx: ref_idx }
+    }
+}
+
+pub struct DiffuseLight {
+    pub emit: Arc<dyn Texture>,
+}
+
+impl DiffuseLight {
+    pub fn new(a: Arc<dyn Texture>) -> Self {
+        Self { emit: a }
+    }
+
+    pub fn new0(c: Vec3) -> Self {
+        Self {
+            emit: Arc::new(SolidColor::new(c)),
+        }
+    }
+}
+
+impl Material for DiffuseLight {
+    fn scatter(
+        &self,
+        r_in: Ray,
+        rec: HitRecord,
+        attenuation: &mut Vec3,
+        scattered: &mut Ray,
+    ) -> bool {
+        return false;
+    }
+
+    fn emitted(&self, u: f64, v: f64, p: &mut Vec3) -> Vec3 {
+        return self.emit.value(u, v, p);
+    }
+}
+
+pub struct Isotropiuc {
+    pub albedo:Arc<dyn Texture>,
+}
+
+impl Isotropiuc{
+    pub fn new0(a:Arc<dyn Texture>)->Self{
+        Self{
+            albedo:a,
+        }
+    }
+
+    pub fn new(c:Vec3)->Self{
+        Self{
+            albedo:Arc::new(SolidColor::new(c)),
+        }
+    }
+}
+
+impl Material for Isotropiuc{
+    fn scatter(&self, r_in: Ray, mut rec: HitRecord, mut attenuation: &mut Vec3, mut scattered: &mut Ray) -> bool {
+        scattered.orig = rec.p;
+        scattered.dir = Vec3::random_in_unit_sphere();
+        scattered.time = r_in.time;
+
+        attenuation.x = self.albedo.value(rec.u, rec.v, &mut rec.p).x;
+        attenuation.y = self.albedo.value(rec.u, rec.v, &mut rec.p).y;
+        attenuation.z = self.albedo.value(rec.u, rec.v, &mut rec.p).z;
+        return true;
     }
 }

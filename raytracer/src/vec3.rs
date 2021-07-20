@@ -30,8 +30,17 @@ impl Ray {
 }
 
 impl Vec3 {
-    pub fn near_zero(&self) -> bool{
-        let s:f64 = 1e-8;
+    pub fn get(&self , axis:i32)->f64{
+        return match axis {
+            0 => self.x,
+            1 => self.y,
+            2 => self.z,
+            _ => 0.0,
+        }
+    }
+
+    pub fn near_zero(&self) -> bool {
+        let s: f64 = 1e-8;
         return (self.x < s && self.y < s && self.z < s);
     }
     pub fn new(x: f64, y: f64, z: f64) -> Self {

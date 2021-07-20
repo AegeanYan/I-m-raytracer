@@ -69,7 +69,7 @@ impl Camera {
             dir: self.lower_left_corner + self.horizontal * s + self.vertical * t
                 - self.origin
                 - offset,
-            time:random_double_lim(self.time0 , self.time1),
+            time: random_double_lim(self.time0, self.time1),
             //time: 0.0,
         };
         return ray;

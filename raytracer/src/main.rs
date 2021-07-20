@@ -1,3 +1,4 @@
+mod AABB;
 mod camera;
 mod hit;
 mod material;
@@ -5,21 +6,30 @@ mod moving_sphere;
 mod rtweekend;
 #[allow(clippy::float_cmp)]
 mod vec3;
-mod AABB;
-//mod BVH;
-mod texture;
+mod BVH;
+mod aarect;
 mod perlin;
+mod texture;
+mod Boxe;
+mod constant_medium;
 
+use crate::aarect::{XyRect, YzRect, XzRect};
 use crate::camera::Camera;
-use crate::hit::{HitRecord, Hittable, HittableList, Sphere};
-use crate::material::{Dielectric, Lambertian, Material, Metal};
+use crate::hit::{HitRecord, Hittable, HittableList, Sphere, RotateY, Translate};
+use crate::material::{Dielectric, DiffuseLight, Lambertian, Material, Metal};
+use crate::moving_sphere::MovingSphere;
+use crate::texture::{CheckerTexture, NoiseTexture};
+use crate::AABB::Aabb;
+use crate::Boxe::Boxes;
 use image::{ImageBuffer, RgbImage};
+use indicatif::ProgressBar;
 pub use rtweekend::*;
+use std::f64::INFINITY;
 use std::sync::Arc;
 pub use vec3::Ray;
 pub use vec3::Vec3;
-use crate::moving_sphere::MovingSphere;
-use crate::texture::{CheckerTexture, NoiseTexture};
+use imageproc::distance_transform::Norm::L1;
+use crate::constant_medium::ConstantMedium;
 // fn main() {
 //     let x = Vec3::new(1.0, 1.0, 1.0);
 //     println!("{:?}", x);
@@ -49,14 +59,20 @@ use crate::texture::{CheckerTexture, NoiseTexture};
 
 fn main() {
     //Image
-    const ASPECT_RATIO: f64 = 16.0 / 9.0;
-    const IMAGE_WIDTH: u32 = 400;
-    const IMAGE_HEIGHT: u32 = (IMAGE_WIDTH as f64 / ASPECT_RATIO) as u32;
-    const SAMPLES_PER_PIXEL: u32 = 100;
-    const MAX_DEPTH: u32 = 50;
-    let mut img: RgbImage = ImageBuffer::new(IMAGE_WIDTH, IMAGE_HEIGHT);
+    // let mut aspect_ratio: f64 = 16.0 / 9.0;
+    // let mut image_width: u32 = 400;
+    // let mut image_height: u32 = (image_width as f64 / aspect_ratio) as u32;
+    // let mut samples_per_pixel: u32 = 10;
+    // let mut max_depth: u32 = 5;
+    let mut aspect_ratio: f64 = 1.0;
+    let mut image_width: u32 = 600;
+    let mut image_height: u32 = (image_width as f64 / aspect_ratio) as u32;
+    let mut samples_per_pixel: u32 = 200;
+    let mut max_depth: u32 = 50;
+    let bar = ProgressBar::new(1024);
+    let mut img: RgbImage = ImageBuffer::new(image_width, image_height);
     //World
-    let mut world: HittableList = random_scene();
+    //let mut world: HittableList = random_scene();
     // let mg:Lambertian = Lambertian{
     //     albedo: Vec3 {
     //         x: 0.8,
@@ -176,7 +192,7 @@ fn main() {
 
     //Camera
     // let viewport_height:f64 = 2.0;
-    // let viewport_width:f64 = ASPECT_RATIO * viewport_height;
+    // let viewport_width:f64 = aspect_ratio * viewport_height;
     // let focal_length = 1.0;
     //
     // let origin:Vec3 = Vec3::new(0.0 , 0.0 ,0.0);
@@ -189,42 +205,78 @@ fn main() {
     // let vup = Vec3::new(0.0, 1.0, 0.0);
     // let dist_to_focus = 10.0;
     // let aperture = 0.1;
-
-    let lookfrom:Vec3;
-    let lookat:Vec3;
-    let mut vfov:f64 = 40.0;
-    let mut aperture:f64 = 0.0;
-    let op = 2;
+    let mut world: HittableList;
+    let lookfrom: Vec3;
+    let lookat: Vec3;
+    let mut vfov: f64 = 40.0;
+    let mut aperture: f64 = 0.0;
+    let mut background: Vec3 = Vec3::new(0.0, 0.0, 0.0);
+    let op = 6;
     match op {
         0 => {
             world = random_scene();
-            lookfrom = Vec3::new(13.0 , 2.0 , 3.0);
-            lookat = Vec3::new(0.0 , 0.0 , 0.0);
+            lookfrom = Vec3::new(13.0, 2.0, 3.0);
+            background = Vec3::new(0.7, 0.8, 1.0);
+            lookat = Vec3::new(0.0, 0.0, 0.0);
             vfov = 20.0;
             aperture = 0.1;
         }
         1 => {
             world = two_spheres();
-            lookfrom = Vec3::new(13.0 , 2.0 , 3.0);
-            lookat = Vec3::new(0.0 , 0.0 , 0.0);
+            lookfrom = Vec3::new(13.0, 2.0, 3.0);
+            background = Vec3::new(0.7, 0.8, 1.0);
+            lookat = Vec3::new(0.0, 0.0, 0.0);
             vfov = 20.0;
+        }
+        2 => {
+            world = two_perlin_spheres();
+            lookfrom = Vec3::new(13.0, 2.0, 3.0);
+            background = Vec3::new(0.7, 0.8, 1.0);
+            lookat = Vec3::new(0.0, 0.0, 0.0);
+            vfov = 20.0;
+        }
+        3 => {
+            world = earth();
+            lookfrom = Vec3::new(13.0, 2.0, 3.0);
+            background = Vec3::new(0.7, 0.8, 1.0);
+            lookat = Vec3::new(0.0, 0.0, 0.0);
+            vfov = 20.0;
+        }
+        4 => {
+            world = simple_light();
+            lookfrom = Vec3::new(26.0, 3.0, 6.0);
+            background = Vec3::new(0.0, 0.0, 0.0);
+            lookat = Vec3::new(0.0, 2.0, 0.0);
+            vfov = 20.0;
+        }
+        5 => {
+            world = cornell_box();
+            // aspect_ratio = 1.0;
+            // image_width = 600;
+            // image_height = (image_width as f64 / aspect_ratio) as u32;
+            // samples_per_pixel = 200;
+            background = Vec3::new(0.0 , 0.0 ,0.0);
+            lookfrom = Vec3::new(278.0 , 278.0 , -800.0);
+            lookat = Vec3::new(278.0 , 278.0 , 0.0);
+            vfov = 40.0;
         }
         _ => {
-            world = two_perlin_spheres();
-            lookfrom = Vec3::new(13.0 , 2.0 , 3.0);
-            lookat = Vec3::new(0.0 , 0.0 , 0.0);
-            vfov = 20.0;
+            world = cornell_smoke();
+            background = Vec3::new(0.0 , 0.0 ,0.0);
+            lookfrom = Vec3::new(278.0 , 278.0 , -800.0);
+            lookat = Vec3::new(278.0 , 278.0 , 0.0);
+            vfov = 40.0;
         }
     }
-    let vup = Vec3::new(0.0 , 1.0 , 0.0);
-    let dist_to_focus:f64 = 10.0;
+    let vup = Vec3::new(0.0, 1.0, 0.0);
+    let dist_to_focus: f64 = 10.0;
 
     let cam: Camera = Camera::camera_from_where(
         lookfrom,
         lookat,
         vup,
-        20.0,
-        16.0 / 9.0,
+        vfov,
+        aspect_ratio,
         aperture,
         dist_to_focus,
         0.0,
@@ -235,20 +287,22 @@ fn main() {
     // let lower_left_corner:Vec3 = origin - horizontal / 2.0 - vertical / 2.0 - Vec3::new(0.0 , 0.0 , focal_length);
 
     //Render
-    for j in (0..IMAGE_HEIGHT).rev() {
-        for i in 0..IMAGE_WIDTH {
+    for j in (0..image_height).rev() {
+        for i in 0..image_width {
             let mut pixel_color: Vec3 = Vec3::new(0.0, 0.0, 0.0);
-            let pixel = img.get_pixel_mut(i, IMAGE_HEIGHT - 1 - j);
-            for k in 0..SAMPLES_PER_PIXEL {
-                let u: f64 = (i as f64 + random_double()) / ((IMAGE_WIDTH - 1) as f64);
-                let v: f64 = (j as f64 + random_double()) / ((IMAGE_HEIGHT - 1) as f64);
+            let pixel = img.get_pixel_mut(i, image_height - 1 - j);
+            for k in 0..samples_per_pixel {
+                let u: f64 = (i as f64 + random_double()) / ((image_width - 1) as f64);
+                let v: f64 = (j as f64 + random_double()) / ((image_height - 1) as f64);
                 let r: Ray = cam.get_ray(u, v);
-                pixel_color += ray_color(r, &world, MAX_DEPTH);
+                pixel_color += ray_color(r, background, &world, max_depth);
             }
-            *pixel = write_color(&pixel_color, SAMPLES_PER_PIXEL);
+            *pixel = write_color(&pixel_color, samples_per_pixel);
         }
+        bar.inc(1);
     }
     img.save("output/test.png").unwrap();
+    bar.finish();
 }
 fn write_color(pixel_color: &Vec3, samples_per_pixel: u32) -> image::Rgb<u8> {
     let mut r: f64 = pixel_color.x;
@@ -298,7 +352,7 @@ fn write_color(pixel_color: &Vec3, samples_per_pixel: u32) -> image::Rgb<u8> {
 //     }
 // }
 
-fn ray_color(r: Ray, world: &dyn Hittable, depth: u32) -> Vec3 {
+fn ray_color(r: Ray, background: Vec3, world: &dyn Hittable, depth: u32) -> Vec3 {
     let mut rec = HitRecord {
         p: Vec3 {
             x: 0.0,
@@ -319,38 +373,40 @@ fn ray_color(r: Ray, world: &dyn Hittable, depth: u32) -> Vec3 {
     if depth <= 0 {
         return Vec3::new(0.0, 0.0, 0.0);
     }
-    if world.hit(r, 0.001, f64::INFINITY, &mut rec) {
-        let mut scattered: Ray = Ray {
-            orig: Vec3 {
-                x: 0.0,
-                y: 0.0,
-                z: 0.0,
-            },
-            dir: Vec3 {
-                x: 0.0,
-                y: 0.0,
-                z: 0.0,
-            },
-            time: 0.0,
-        };
-        let mut attenuation: Vec3 = Vec3 {
+    if !world.hit(r, 0.001, INFINITY, &mut rec) {
+        return background;
+    }
+    let mut scattered: Ray = Ray {
+        orig: Vec3 {
             x: 0.0,
             y: 0.0,
             z: 0.0,
-        };
-
-        if rec
-            .mat_ptr
-            .scatter(r, rec.clone(), &mut attenuation, &mut scattered)
-        {
-            return ray_color(scattered, world, depth - 1) * attenuation;
-        }
-        return Vec3::new(0.0, 0.0, 0.0);
+        },
+        dir: Vec3 {
+            x: 0.0,
+            y: 0.0,
+            z: 0.0,
+        },
+        time: 0.0,
+    };
+    let mut attenuation: Vec3 = Vec3 {
+        x: 0.0,
+        y: 0.0,
+        z: 0.0,
+    };
+    let mut emitted: Vec3 = rec.mat_ptr.emitted(rec.u, rec.v, &mut rec.p);
+    if !rec
+        .mat_ptr
+        .scatter(r, rec.clone(), &mut attenuation, &mut scattered)
+    {
+        return emitted;
     }
-    let unit_direction: Vec3 = Vec3::unit_vector(r.dir);
-    let t: f64 = 0.5 * (unit_direction.y + 1.0);
+    return emitted + attenuation * ray_color(scattered, background, world, depth - 1);
+    //return Vec3::new(0.0, 0.0, 0.0);
+    // let unit_direction: Vec3 = Vec3::unit_vector(r.dir);
+    // let t: f64 = 0.5 * (unit_direction.y + 1.0);
     //线性插值
-    return Vec3::new(1.0, 1.0, 1.0) * (1.0 - t) + Vec3::new(0.5, 0.7, 1.0) * t;
+    //return Vec3::new(1.0, 1.0, 1.0) * (1.0 - t) + Vec3::new(0.5, 0.7, 1.0) * t;
 }
 
 fn random_scene() -> HittableList {
@@ -366,9 +422,12 @@ fn random_scene() -> HittableList {
     //     mat_ptr: ground_material,
     // };
     // world.add(Arc::new(gd));
-    let checker = Arc::new(CheckerTexture::new(Vec3::new(0.2 ,0.3 , 0.1) , Vec3::new(0.9 , 0.9 , 0.9)));
-    let gd:Sphere = Sphere{
-        center: Vec3::new(0.0 , -1000.0 , 0.0),
+    let checker = Arc::new(CheckerTexture::new(
+        Vec3::new(0.2, 0.3, 0.1),
+        Vec3::new(0.9, 0.9, 0.9),
+    ));
+    let gd: Sphere = Sphere {
+        center: Vec3::new(0.0, -1000.0, 0.0),
         radius: 1000.0,
         mat_ptr: Arc::new(Lambertian::news(checker)),
     };
@@ -387,8 +446,8 @@ fn random_scene() -> HittableList {
                     let albedo = Vec3::new(random_double(), random_double(), random_double())
                         * Vec3::new(random_double(), random_double(), random_double());
                     sphere_material = Arc::new(Lambertian::new(albedo));
-                    let center2:Vec3 = center + Vec3::new(0.0 , random_double_lim(0.0 , 0.5) , 0.0);
-                    let ms:MovingSphere = MovingSphere{
+                    let center2: Vec3 = center + Vec3::new(0.0, random_double_lim(0.0, 0.5), 0.0);
+                    let ms: MovingSphere = MovingSphere {
                         center0: center,
                         center1: center2,
                         time0: 0.0,
@@ -459,43 +518,136 @@ fn random_scene() -> HittableList {
     return world;
 }
 
-pub fn two_spheres() ->HittableList{
-    let mut objects:HittableList = HittableList { objects: vec![] };
+pub fn two_spheres() -> HittableList {
+    let mut objects: HittableList = HittableList { objects: vec![] };
 
-    let checker = Arc::new(CheckerTexture::new(Vec3::new(0.2 , 0.3 , 0.1) , Vec3::new(0.9 , 0.9 , 0.9)));
-    let sph1:Sphere = Sphere{
-        center: Vec3::new(0.0 , -10.0 , 0.0),
+    let checker = Arc::new(CheckerTexture::new(
+        Vec3::new(0.2, 0.3, 0.1),
+        Vec3::new(0.9, 0.9, 0.9),
+    ));
+    let sph1: Sphere = Sphere {
+        center: Vec3::new(0.0, -10.0, 0.0),
         radius: 10.0,
         mat_ptr: Arc::new(Lambertian::news(checker.clone())),
     };
-    let sph2:Sphere = Sphere{
-        center: Vec3::new(0.0 , 10.0 , 0.0),
+    let sph2: Sphere = Sphere {
+        center: Vec3::new(0.0, 10.0, 0.0),
         radius: 10.0,
         mat_ptr: Arc::new(Lambertian::news(checker.clone())),
     };
 
     objects.add(Arc::new(sph1));
     objects.add(Arc::new(sph2));
-    
+
     return objects;
 }
 
-pub fn two_perlin_spheres()->HittableList{
-    let mut objects:HittableList = HittableList { objects: vec![] };
-    let pertext = Arc::new(NoiseTexture::new0());
-    let sph1:Sphere = Sphere{
-        center: Vec3::new(0.0 , -1000.0 , 0.0),
+pub fn two_perlin_spheres() -> HittableList {
+    let mut objects: HittableList = HittableList { objects: vec![] };
+    let pertext = Arc::new(NoiseTexture::new0(4.0));
+    //let pertext = Arc::new(CheckerTexture::new(Vec3::new(0.2 , 0.3 , 0.1) , Vec3::new(0.9 , 0.9 , 0.9)));
+
+    let sph1: Sphere = Sphere {
+        center: Vec3::new(0.0, -1000.0, 0.0),
         radius: 1000.0,
         mat_ptr: Arc::new(Lambertian::news(pertext.clone())),
     };
-    let sph2:Sphere = Sphere{
-        center: Vec3::new(0.0 , 2.0 , 0.0),
+    let sph2: Sphere = Sphere {
+        center: Vec3::new(0.0, 2.0, 0.0),
         radius: 2.0,
         mat_ptr: Arc::new(Lambertian::news(pertext.clone())),
     };
 
     objects.add(Arc::new(sph1));
     objects.add(Arc::new(sph2));
+
+    return objects;
+}
+
+pub fn earth() -> HittableList {
+    let mut objects: HittableList = HittableList { objects: vec![] };
+    let earth_texture = Arc::new(texture::ImageTexture::new("earthmap.jpeg"));
+    //let earth_surface = Arc::new(Lambertian::news(earth_texture));
+    let sph = Sphere {
+        center: Vec3::new(0.0, 0.0, 0.0),
+        radius: 2.0,
+        mat_ptr: Arc::new(Lambertian::news(earth_texture)),
+    };
+    objects.add(Arc::new(sph));
+    return objects;
+}
+pub fn simple_light() -> HittableList {
+    let mut objects: HittableList = HittableList { objects: vec![] };
+
+    let pertext = Arc::new(NoiseTexture::new0(4.0));
+    let sph1 = Sphere {
+        center: Vec3::new(0.0, -1000.0, 0.0),
+        radius: 1000.0,
+        mat_ptr: Arc::new(Lambertian::news(pertext.clone())),
+    };
+    let sph2 = Sphere {
+        center: Vec3::new(0.0, 2.0, 0.0),
+        radius: 2.0,
+        mat_ptr: Arc::new(Lambertian::news(pertext.clone())),
+    };
+    objects.add(Arc::new(sph1));
+    objects.add(Arc::new(sph2));
+    let difflight = Arc::new(DiffuseLight::new0(Vec3::new(4.0, 4.0, 4.0)));
+    objects.add(Arc::new(XyRect::new(3.0, 5.0, 1.0, 3.0, -2.0, difflight)));
+
+    return objects;
+}
+
+pub fn cornell_box()->HittableList{
+    let mut objects: HittableList = HittableList { objects: vec![] };
+
+    let red = Arc::new(Lambertian::new(Vec3::new(0.65 , 0.05 , 0.05)));
+    let white = Arc::new(Lambertian::new(Vec3::new(0.73 , 0.73 , 0.73)));
+    let green = Arc::new(Lambertian::new(Vec3::new(0.12 , 0.45 , 0.15)));
+    let light = Arc::new(DiffuseLight::new0(Vec3::new(15.0 , 15.0 ,15.0)));
+    objects.add(Arc::new(YzRect::new(0.0 , 555.0 , 0.0 , 555.0 , 555.0  ,green.clone())));
+    objects.add(Arc::new(YzRect::new(0.0 , 555.0 , 0.0 , 555.0 , 0.0  ,red.clone())));
+    objects.add(Arc::new(XzRect::new(213.0 , 343.0 , 227.0 , 332.0 , 554.0 , light.clone())));
+    objects.add(Arc::new(XzRect::new(0.0 , 555.0 , 0.0 , 555.0 , 0.0  ,white.clone())));
+    objects.add(Arc::new(XzRect::new(0.0 , 555.0 , 0.0 , 555.0 , 555.0  ,white.clone())));
+    objects.add(Arc::new(XyRect::new(0.0 , 555.0 , 0.0 , 555.0 , 555.0  ,white.clone())));
+
+    let mut box1:Arc<dyn Hittable> = Arc::new(Boxes::new(Vec3::new(0.0,0.0,0.0),Vec3::new(165.0,330.0,165.0) , white.clone()));
+    box1 = Arc::new(RotateY::new(box1 , 15.0));
+    box1 = Arc::new(Translate::new(box1 , Vec3::new(265.0 , 0.0 , 295.0)));
+    objects.add(box1);
+
+    let mut box2:Arc<dyn Hittable> = Arc::new(Boxes::new(Vec3::new(0.0,0.0,0.0), Vec3::new(165.0,165.0,165.0) , white.clone()));
+    box2 = Arc::new(RotateY::new(box2 , -18.0));
+    box2 = Arc::new(Translate::new(box2 , Vec3::new(130.0 , 0.0 , 65.0)));
+    objects.add(box2);
+
+    return objects;
+}
+
+pub fn cornell_smoke()->HittableList{
+    let mut objects: HittableList = HittableList { objects: vec![] };
+
+    let red = Arc::new(Lambertian::new(Vec3::new(0.65 , 0.05 , 0.05)));
+    let white = Arc::new(Lambertian::new(Vec3::new(0.73 , 0.73 , 0.73)));
+    let green = Arc::new(Lambertian::new(Vec3::new(0.12 , 0.45 , 0.15)));
+    let light = Arc::new(DiffuseLight::new0(Vec3::new(15.0 , 15.0 ,15.0)));
+    objects.add(Arc::new(YzRect::new(0.0 , 555.0 , 0.0 , 555.0 , 555.0  ,green.clone())));
+    objects.add(Arc::new(YzRect::new(0.0 , 555.0 , 0.0 , 555.0 , 0.0  ,red.clone())));
+    objects.add(Arc::new(XzRect::new(213.0 , 343.0 , 227.0 , 332.0 , 554.0 , light.clone())));
+    objects.add(Arc::new(XzRect::new(0.0 , 555.0 , 0.0 , 555.0 , 0.0  ,white.clone())));
+    objects.add(Arc::new(XzRect::new(0.0 , 555.0 , 0.0 , 555.0 , 555.0  ,white.clone())));
+    objects.add(Arc::new(XyRect::new(0.0 , 555.0 , 0.0 , 555.0 , 555.0  ,white.clone())));
+
+    let mut box1:Arc<dyn Hittable> = Arc::new(Boxes::new(Vec3::new(0.0,0.0,0.0),Vec3::new(165.0,330.0,165.0) , white.clone()));
+    box1 = Arc::new(RotateY::new(box1 , 15.0));
+    box1 = Arc::new(Translate::new(box1 , Vec3::new(265.0 , 0.0 , 295.0)));
+    objects.add(Arc::new(ConstantMedium::new(box1 , 0.01 , Vec3::new(0.0,0.0,0.0))));
+
+    let mut box2:Arc<dyn Hittable> = Arc::new(Boxes::new(Vec3::new(0.0,0.0,0.0), Vec3::new(165.0,165.0,165.0) , white.clone()));
+    box2 = Arc::new(RotateY::new(box2 , -18.0));
+    box2 = Arc::new(Translate::new(box2 , Vec3::new(130.0 , 0.0 , 65.0)));
+    objects.add(Arc::new(ConstantMedium::new(box2 , 0.01 , Vec3::new(1.0,1.0,1.0))));
 
     return objects;
 }
