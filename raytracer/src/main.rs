@@ -631,10 +631,10 @@ pub fn cornell_smoke()->HittableList{
     let red = Arc::new(Lambertian::new(Vec3::new(0.65 , 0.05 , 0.05)));
     let white = Arc::new(Lambertian::new(Vec3::new(0.73 , 0.73 , 0.73)));
     let green = Arc::new(Lambertian::new(Vec3::new(0.12 , 0.45 , 0.15)));
-    let light = Arc::new(DiffuseLight::new0(Vec3::new(15.0 , 15.0 ,15.0)));
+    let light = Arc::new(DiffuseLight::new0(Vec3::new(7.0 , 7.0 ,7.0)));
     objects.add(Arc::new(YzRect::new(0.0 , 555.0 , 0.0 , 555.0 , 555.0  ,green.clone())));
     objects.add(Arc::new(YzRect::new(0.0 , 555.0 , 0.0 , 555.0 , 0.0  ,red.clone())));
-    objects.add(Arc::new(XzRect::new(213.0 , 343.0 , 227.0 , 332.0 , 554.0 , light.clone())));
+    objects.add(Arc::new(XzRect::new(113.0 , 443.0 , 127.0 , 432.0 , 554.0 , light.clone())));
     objects.add(Arc::new(XzRect::new(0.0 , 555.0 , 0.0 , 555.0 , 0.0  ,white.clone())));
     objects.add(Arc::new(XzRect::new(0.0 , 555.0 , 0.0 , 555.0 , 555.0  ,white.clone())));
     objects.add(Arc::new(XyRect::new(0.0 , 555.0 , 0.0 , 555.0 , 555.0  ,white.clone())));
