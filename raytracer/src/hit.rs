@@ -44,6 +44,13 @@ impl Sphere {
         *u = phi / (2.0 * PI);
         *v = theta / PI;
     }
+    pub fn new(cen:Vec3 , r:f64 , m:Arc<dyn Material>)->Self{
+        Self{
+            center:cen,
+            radius:r,
+            mat_ptr:m,
+        }
+    }
 }
 impl Hittable for Sphere {
     fn hit(&self, r: Ray, t_min: f64, t_max: f64, mut rec: &mut HitRecord) -> bool {

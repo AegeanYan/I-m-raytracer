@@ -15,9 +15,10 @@ pub struct BvhNode{
     pub box0:Aabb,
 }
 impl BvhNode{
-    pub fn new(mut list:HittableList, time0:f64, time1:f64){
+    pub fn new(mut list:HittableList, time0:f64, time1:f64)->Self{
         let mut len = list.objects.len();
-        BvhNode::new0(&mut list.objects , 0 , len , time0 , time1);
+        // Self:BvhNode::new0(&mut list.objects , 0 , len , time0 , time1);
+        return BvhNode::new0(&mut list.objects , 0 , len  , time0 ,time1);
     }
 }
 impl Hittable for BvhNode{

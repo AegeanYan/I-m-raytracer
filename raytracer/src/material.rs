@@ -6,15 +6,22 @@ use crate::texture::Texture;
 use crate::Ray;
 use crate::Vec3;
 use std::sync::Arc;
+use std::f64::consts::PI;
 
 pub trait Material {
     fn scatter(
         &self,
-        r_in: Ray,
-        rec: hit::HitRecord,
-        attenuation: &mut Vec3,
+        r_in:&mut Ray,
+        rec:&mut hit::HitRecord,
+        albedo: &mut Vec3,
         scattered: &mut Ray,
-    ) -> bool;
+        //pdf:&mut f64
+    ) -> bool{
+        return false;
+    }
+    fn scattering_pdf(&self , r_in:Ray , rec:hit::HitRecord , scattered:&mut Ray)->f64{
+        return 0.0;
+    }
     fn emitted(&self, u: f64, v: f64, p: &mut Vec3) -> Vec3 {
         return Vec3::new(0.0, 0.0, 0.0);
     }
@@ -38,9 +45,9 @@ impl Lambertian {
 impl Material for Lambertian {
     fn scatter(
         &self,
-        r_in: Ray,
-        mut rec: HitRecord,
-        mut attenuation: &mut Vec3,
+        r_in:&mut Ray,
+        mut rec:&mut HitRecord,
+        mut albedo: &mut Vec3,
         scattered: &mut Ray,
     ) -> bool {
         let mut scatter_direction: Vec3 = rec.normal + Vec3::random_unit_vector();
@@ -52,12 +59,13 @@ impl Material for Lambertian {
             dir: scatter_direction,
             time: r_in.time,
         };
+        albedo.x = self.albedo.value(rec.u , rec.v , &mut rec.p).x;
+        albedo.y = self.albedo.value(rec.u , rec.v , &mut rec.p).y;
+        albedo.z = self.albedo.value(rec.u , rec.v , &mut rec.p).z;
+        //pdf = &mut (Vec3::dot(rec.normal, scattered.dir) / PI);
         scattered.dir = ra.dir;
         scattered.orig = ra.orig;
         scattered.time = ra.time;
-        attenuation.x = self.albedo.value(rec.u, rec.v, &mut rec.p).x;
-        attenuation.y = self.albedo.value(rec.u, rec.v, &mut rec.p).y;
-        attenuation.z = self.albedo.value(rec.u, rec.v, &mut rec.p).z;
 
         return true;
     }
@@ -71,8 +79,8 @@ pub struct Metal {
 impl Material for Metal {
     fn scatter(
         &self,
-        r_in: Ray,
-        rec: HitRecord,
+        r_in:&mut Ray,
+        rec:&mut  HitRecord,
         attenuation: &mut Vec3,
         scattered: &mut Ray,
     ) -> bool {
@@ -117,8 +125,8 @@ impl Material for Dielectric {
     fn scatter(
         //我好像把几种方式重在一起了，之后可能会出问题
         &self,
-        r_in: Ray,
-        rec: HitRecord,
+        r_in:&mut Ray,
+        rec:&mut HitRecord,
         attenuation: &mut Vec3,
         scattered: &mut Ray,
     ) -> bool {
@@ -190,8 +198,8 @@ impl DiffuseLight {
 impl Material for DiffuseLight {
     fn scatter(
         &self,
-        r_in: Ray,
-        rec: HitRecord,
+        r_in:&mut Ray,
+        rec:&mut HitRecord,
         attenuation: &mut Vec3,
         scattered: &mut Ray,
     ) -> bool {
@@ -222,7 +230,7 @@ impl Isotropiuc{
 }
 
 impl Material for Isotropiuc{
-    fn scatter(&self, r_in: Ray, mut rec: HitRecord, mut attenuation: &mut Vec3, mut scattered: &mut Ray) -> bool {
+    fn scatter(&self, r_in:&mut Ray, mut rec:&mut HitRecord, mut attenuation: &mut Vec3, mut scattered: &mut Ray) -> bool {
         scattered.orig = rec.p;
         scattered.dir = Vec3::random_in_unit_sphere();
         scattered.time = r_in.time;

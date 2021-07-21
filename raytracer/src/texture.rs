@@ -107,8 +107,8 @@ impl ImageTexture {
 
 impl Texture for ImageTexture {
     fn value(&self, mut u: f64, mut v: f64, p: &mut Vec3) -> Vec3 {
-        u = clamp(u, 0.0, 1.0);
-        v = 1.0 - clamp(v, 0.0, 1.0);
+        let mut u = clamp(u, 0.0, 1.0);
+        let mut v = 1.0 - clamp(v, 0.0, 1.0);
 
         let mut i = (u * self.width as f64) as i32;
         let mut j = (v * self.height as f64) as i32;
