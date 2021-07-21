@@ -1,4 +1,4 @@
-use crate::material::{Material, Metal};
+use crate::material::{Material, Metal, Lambertian};
 use crate::{MovingSphere, Ray, Vec3, AABB::Aabb, degrees_to_radians};
 use std::f64::consts::PI;
 use std::sync::Arc;
@@ -29,6 +29,12 @@ impl HitRecord {
 pub trait Hittable {
     fn hit(&self, r: Ray, t_min: f64, t_max: f64, rec: &mut HitRecord) -> bool;
     fn bounding_box(&self, time0: f64, time1: f64, output_box: &mut Aabb) -> bool;
+    fn pdf_value(&self , o:Vec3 , v:Vec3)->f64{
+        return 0.0;
+    }
+    fn random(&self , o:Vec3)->Vec3{
+        return Vec3::new(1.0,0.0,0.0);
+    }
 }
 
 pub struct Sphere {
@@ -112,7 +118,7 @@ impl Hittable for HittableList {
         let mut temp_rec = HitRecord {
             p: Vec3::new(0.0, 0.0, 0.0),
             normal: Vec3::new(0.0, 0.0, 0.0),
-            mat_ptr: Arc::new(Metal::new()),
+            mat_ptr: Arc::new(Lambertian::new(Vec3::new(0.0,0.0,0.0))),
             t: 0.0,
             u: 0.0,
             v: 0.0,
@@ -322,5 +328,31 @@ impl Hittable for RotateY{
     fn bounding_box(&self, time0: f64, time1: f64, output_box: &mut Aabb) -> bool {
         *output_box = self.bbox;
         return self.hasbox;
+    }
+}
+
+pub struct FlipFace {
+    pub ptr:Arc<dyn Hittable>,
+}
+
+impl FlipFace{
+    pub fn new(p:Arc<dyn Hittable>)->Self{
+        Self{
+            ptr: p,
+        }
+    }
+}
+
+impl Hittable for FlipFace{
+    fn hit(&self, r: Ray, t_min: f64, t_max: f64, rec: &mut HitRecord) -> bool {
+        if !self.ptr.hit(r , t_min , t_max , rec) {
+            return false;
+        };
+        rec.front_face = !rec.front_face;
+        return true;
+    }
+
+    fn bounding_box(&self, time0: f64, time1: f64, output_box: &mut Aabb) -> bool {
+        return self.ptr.bounding_box(time0 , time1 , output_box);
     }
 }

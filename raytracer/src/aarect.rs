@@ -1,10 +1,11 @@
 use crate::hit::HitRecord;
-use crate::material::Material;
-use crate::Hittable;
+use crate::material::{Material, Lambertian, Metal};
+use crate::{Hittable, random_double_lim};
 use crate::Vec3;
 use crate::AABB::Aabb;
 use crate::{rtweekend, Ray};
 use std::sync::Arc;
+use std::f64::INFINITY;
 
 pub struct XyRect {
     pub mp: Arc<dyn Material>,
@@ -105,6 +106,38 @@ impl Hittable for XzRect {
             Vec3::new(self.x1, self.k + 0.0001, self.z1),
         );
         return true;
+    }
+    fn pdf_value(&self , origin:Vec3 , v:Vec3)->f64{
+        let mut rec:HitRecord = HitRecord {
+            p: Vec3 {
+                x: 0.0,
+                y: 0.0,
+                z: 0.0
+            },
+            normal: Vec3 {
+                x: 0.0,
+                y: 0.0,
+                z: 0.0
+            },
+            mat_ptr: Arc::new(Metal::new()),
+            t: 0.0,
+            u: 0.0,
+            v: 0.0,
+            front_face: false
+        };
+        if !self.hit(Ray::new(origin , v ,0.0) , 0.001 , INFINITY , &mut rec) {
+            return 0.0;
+        };
+        let area = (self.x1 - self.x0) * (self.z1 - self.x0);
+        let distance_squared = rec.t * rec.t * v.length_squared();
+        let cosine = (Vec3::dot(v , rec.normal) / v.length()).abs();
+
+        return distance_squared / (cosine * area);
+    }
+
+    fn random(&self , origin:Vec3)->Vec3{
+        let random_point = Vec3::new(random_double_lim(self.x0 , self.x1) , self.k , random_double_lim(self.z0 , self.z1));
+        return random_point - origin;
     }
 }
 pub struct YzRect {

@@ -7,6 +7,9 @@ use crate::Ray;
 use crate::Vec3;
 use std::sync::Arc;
 use std::f64::consts::PI;
+use imageproc::math::l1_norm;
+use crate::onb::Onb;
+use crate::pdf::random_cosine_direction;
 
 pub trait Material {
     fn scatter(
@@ -15,14 +18,14 @@ pub trait Material {
         rec:&mut hit::HitRecord,
         albedo: &mut Vec3,
         scattered: &mut Ray,
-        //pdf:&mut f64
+        pdf:&mut f64
     ) -> bool{
         return false;
     }
-    fn scattering_pdf(&self , r_in:Ray , rec:hit::HitRecord , scattered:&mut Ray)->f64{
+    fn scattering_pdf(&self , r_in:&mut Ray , rec:&mut hit::HitRecord , scattered:&mut Ray)->f64{
         return 0.0;
     }
-    fn emitted(&self, u: f64, v: f64, p: &mut Vec3) -> Vec3 {
+    fn emitted(&self, r_in:&mut Ray , rec:&mut hit::HitRecord , u: f64, v: f64, p: &mut Vec3) -> Vec3 {
         return Vec3::new(0.0, 0.0, 0.0);
     }
 }
@@ -43,30 +46,80 @@ impl Lambertian {
 }
 
 impl Material for Lambertian {
+    fn scattering_pdf(&self , r_in:&mut Ray , rec:&mut hit::HitRecord , scattered:&mut Ray)->f64{
+        let cosine = Vec3::dot(rec.normal , Vec3::unit_vector(scattered.dir));
+        if cosine < 0.0 {
+            return 0.0;
+        }else {
+            return cosine / PI;
+        }
+    }
     fn scatter(
         &self,
         r_in:&mut Ray,
         mut rec:&mut HitRecord,
         mut albedo: &mut Vec3,
         scattered: &mut Ray,
+        pdf:&mut f64,
     ) -> bool {
-        let mut scatter_direction: Vec3 = rec.normal + Vec3::random_unit_vector();
-        if scatter_direction.near_zero() {
-            scatter_direction = rec.normal;
-        }
-        let ra = Ray {
+        // let mut scatter_direction: Vec3 = rec.normal + Vec3::random_unit_vector();
+        // if scatter_direction.near_zero() {
+        //     scatter_direction = rec.normal;
+        // }
+        // let ra = Ray {
+        //     orig: rec.p,
+        //     dir: Vec3::unit_vector(scatter_direction),
+        //     time: r_in.time,
+        // };
+        // scattered.dir = ra.dir;
+        // scattered.orig = ra.orig;
+        // scattered.time = ra.time;
+        // albedo.x = self.albedo.value(rec.u , rec.v , &mut rec.p).x;
+        // albedo.y = self.albedo.value(rec.u , rec.v , &mut rec.p).y;
+        // albedo.z = self.albedo.value(rec.u , rec.v , &mut rec.p).z;
+        // *pdf = (Vec3::dot(rec.normal, scattered.dir) / PI);
+        //
+        // return true;
+
+        //another activision
+
+        // let direction = Vec3::random_in_hemisphere(rec.normal);
+        // let ra = Ray{
+        //     orig: rec.p,
+        //     dir: Vec3::unit_vector(direction),
+        //     time: r_in.time,
+        // };
+        //
+        // scattered.orig = ra.orig;
+        // scattered.dir = ra.dir;
+        // scattered.time = ra.time;
+        //
+        // albedo.x = self.albedo.value(rec.u , rec.v , &mut rec.p).x;
+        // albedo.y = self.albedo.value(rec.u , rec.v , &mut rec.p).y;
+        // albedo.z = self.albedo.value(rec.u , rec.v , &mut rec.p).z;
+        //
+        // *pdf = 0.5 / PI;
+        // return true;
+
+        //
+
+        let mut uvw:Onb = Onb { axis: [Vec3::new(0.0,0.0,0.0) , Vec3::new(0.0,0.0,0.0) , Vec3::new(0.0,0.0,0.0)] };
+        uvw.build_from_w(&mut rec.normal);
+        let direction = uvw.local0(random_cosine_direction());
+        let ra = Ray{
             orig: rec.p,
-            dir: scatter_direction,
+            dir: Vec3::unit_vector(direction),
             time: r_in.time,
         };
+        scattered.orig = ra.orig;
+        scattered.dir = ra.dir;
+        scattered.time = ra.time;
+
         albedo.x = self.albedo.value(rec.u , rec.v , &mut rec.p).x;
         albedo.y = self.albedo.value(rec.u , rec.v , &mut rec.p).y;
         albedo.z = self.albedo.value(rec.u , rec.v , &mut rec.p).z;
-        //pdf = &mut (Vec3::dot(rec.normal, scattered.dir) / PI);
-        scattered.dir = ra.dir;
-        scattered.orig = ra.orig;
-        scattered.time = ra.time;
 
+        *pdf = Vec3::dot(uvw.axis[2] , scattered.dir) / PI;
         return true;
     }
 }
@@ -83,6 +136,7 @@ impl Material for Metal {
         rec:&mut  HitRecord,
         attenuation: &mut Vec3,
         scattered: &mut Ray,
+        pdf:&mut f64
     ) -> bool {
         let reflected: Vec3 = Vec3::reflect(Vec3::unit_vector(r_in.dir), rec.normal);
         let ra = Ray {
@@ -129,6 +183,7 @@ impl Material for Dielectric {
         rec:&mut HitRecord,
         attenuation: &mut Vec3,
         scattered: &mut Ray,
+        pdf:&mut f64
     ) -> bool {
         attenuation.x = 1.0;
         attenuation.y = 1.0;
@@ -202,12 +257,17 @@ impl Material for DiffuseLight {
         rec:&mut HitRecord,
         attenuation: &mut Vec3,
         scattered: &mut Ray,
+        pdf:&mut f64
     ) -> bool {
         return false;
     }
 
-    fn emitted(&self, u: f64, v: f64, p: &mut Vec3) -> Vec3 {
-        return self.emit.value(u, v, p);
+    fn emitted(&self,r_in:&mut Ray , rec:&mut hit::HitRecord ,  u: f64, v: f64, p: &mut Vec3) -> Vec3 {
+        if rec.front_face {
+            return self.emit.value(u, v, p);
+        }else {
+            return Vec3::new(0.0,0.0,0.0);
+        }
     }
 }
 
@@ -230,7 +290,7 @@ impl Isotropiuc{
 }
 
 impl Material for Isotropiuc{
-    fn scatter(&self, r_in:&mut Ray, mut rec:&mut HitRecord, mut attenuation: &mut Vec3, mut scattered: &mut Ray) -> bool {
+    fn scatter(&self, r_in:&mut Ray, mut rec:&mut HitRecord, mut attenuation: &mut Vec3, mut scattered: &mut Ray , pdf:&mut f64) -> bool {
         scattered.orig = rec.p;
         scattered.dir = Vec3::random_in_unit_sphere();
         scattered.time = r_in.time;

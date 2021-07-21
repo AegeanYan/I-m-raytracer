@@ -12,10 +12,12 @@ mod perlin;
 mod texture;
 mod Boxe;
 mod constant_medium;
+mod onb;
+mod pdf;
 
 use crate::aarect::{XyRect, YzRect, XzRect};
 use crate::camera::Camera;
-use crate::hit::{HitRecord, Hittable, HittableList, Sphere, RotateY, Translate};
+use crate::hit::{HitRecord, Hittable, HittableList, Sphere, RotateY, Translate, FlipFace};
 use crate::material::{Dielectric, DiffuseLight, Lambertian, Material, Metal};
 use crate::moving_sphere::MovingSphere;
 use crate::texture::{CheckerTexture, NoiseTexture, ImageTexture};
@@ -32,6 +34,7 @@ pub use vec3::Vec3;
 use imageproc::distance_transform::Norm::L1;
 use crate::constant_medium::ConstantMedium;
 use std::collections::hash_map::Entry::Vacant;
+use crate::pdf::{CosinePdf, Pdf, HittablePdf, MixturePdf};
 // fn main() {
 //     let x = Vec3::new(1.0, 1.0, 1.0);
 //     println!("{:?}", x);
@@ -69,10 +72,11 @@ fn main() {
     let mut aspect_ratio: f64 = 1.0;
     let mut image_width: u32 = 600;
     let mut image_height: u32 = (image_width as f64 / aspect_ratio) as u32;
-    let mut samples_per_pixel: u32 = 10;
+    let mut samples_per_pixel: u32 = 1000;
     let mut max_depth: u32 = 5;
     let bar = ProgressBar::new(1024);
     let mut img: RgbImage = ImageBuffer::new(image_width, image_height);
+    let lights:Arc<dyn Hittable> = Arc::new(XzRect::new(213.0,343.0,227.0,332.0,554.0 , Arc::new(Metal::new())));
     //World
     //let mut world: HittableList = random_scene();
     // let mg:Lambertian = Lambertian{
@@ -304,7 +308,7 @@ fn main() {
                 let u: f64 = (i as f64 + random_double()) / ((image_width - 1) as f64);
                 let v: f64 = (j as f64 + random_double()) / ((image_height - 1) as f64);
                 let r: Ray = cam.get_ray(u, v);
-                pixel_color += ray_color(r, background, &world, max_depth);
+                pixel_color += ray_color(r, background, &world, lights.clone() , max_depth);
             }
             *pixel = write_color(&pixel_color, samples_per_pixel);
         }
@@ -361,7 +365,7 @@ fn write_color(pixel_color: &Vec3, samples_per_pixel: u32) -> image::Rgb<u8> {
 //     }
 // }
 
-fn ray_color(mut r: Ray, background: Vec3, world: &dyn Hittable, depth: u32) -> Vec3 {
+fn ray_color(mut r: Ray, background: Vec3, world: &dyn Hittable, lights: Arc<dyn Hittable> , depth: u32) -> Vec3 {
     let mut rec = HitRecord {
         p: Vec3 {
             x: 0.0,
@@ -373,7 +377,7 @@ fn ray_color(mut r: Ray, background: Vec3, world: &dyn Hittable, depth: u32) -> 
             y: 0.0,
             z: 0.0,
         },
-        mat_ptr: Arc::new(Metal::new()),
+        mat_ptr: Arc::new(Lambertian::new(Vec3::new(0.0,0.0,0.0))),
         t: 0.0,
         u: 0.0,
         v: 0.0,
@@ -403,17 +407,63 @@ fn ray_color(mut r: Ray, background: Vec3, world: &dyn Hittable, depth: u32) -> 
         y: 0.0,
         z: 0.0,
     };
-    let mut emitted: Vec3 = rec.mat_ptr.emitted(rec.u, rec.v, &mut rec.p);
-    let mut pdf:f64 = 0.0;
+    let mut emitted: Vec3 = rec.mat_ptr.emitted(&mut r.clone() , &mut rec.clone() , rec.u, rec.v, &mut rec.p);
+    let mut pdf_val:f64 = 0.0;
 
     if !rec
         .mat_ptr
-        .scatter( &mut r, &mut rec.clone(), &mut albedo, &mut scattered)
+        .scatter(&mut r, &mut rec.clone(), &mut albedo, &mut scattered, &mut pdf_val)
     {
         return emitted;
     };
-    return emitted + albedo * ray_color(scattered , background , world , depth - 1);
-    //return emitted + albedo * rec.clone().mat_ptr.scattering_pdf(r , rec.clone() , &mut scattered) * ray_color(scattered, background, world, depth - 1) / pdf;
+
+    // let on_light = Vec3::new(random_double_lim(213.0 , 343.0) , 554.0 , random_double_lim(227.0,332.0));
+    // let mut to_light = on_light - rec.p;
+    // let distance_squared = to_light.length_squared();
+    // to_light = Vec3::unit_vector(to_light);
+    //
+    // if Vec3::dot(to_light , rec.normal) < 0.0 {
+    //     return emitted;
+    // }
+    //
+    // let light_area = (343.0 - 213.0) * (332.0 - 227.0);
+    // let light_cosine = to_light.y.abs();
+    // if light_cosine < 0.000001 {
+    //     return emitted;
+    // }
+    //
+    // pdf_val = distance_squared / (light_cosine * light_area);
+
+    // let p:CosinePdf = CosinePdf::new(rec.normal);
+    //
+    // scattered.orig = rec.p;
+    // scattered.dir = p.generate();
+    // scattered.time = r.time;
+    let p0 = Arc::new(HittablePdf::new(lights.clone() , rec.p));
+    let p1 = Arc::new(CosinePdf::new(rec.normal));
+    let mut mixed_pdf = MixturePdf::new(p0, p1);
+
+    let mut light_pdf:HittablePdf = HittablePdf::new(lights.clone() , rec.p);
+    scattered.orig = rec.p;
+    scattered.dir = mixed_pdf.generate();
+    scattered.time = r.time;
+
+    //return emitted + albedo * ray_color(scattered , background , world , depth - 1);
+
+    // let emi:Vec3 = emitted;
+    //
+    // let alb:Vec3 = albedo;
+    //
+    // let res:f64 = rec.mat_ptr.scattering_pdf(&mut r , &mut rec.clone() , &mut scattered);
+    //
+    // let rays:Vec3 = ray_color(scattered, background, world, depth - 1);
+    //
+    // return emi + alb * res * rays / pdf_val;
+
+    //pdf_val = p.value(&mut scattered.dir);
+    pdf_val = mixed_pdf.value(&mut scattered.dir);
+    return  emitted + albedo * rec.mat_ptr.scattering_pdf(&mut r , &mut rec.clone() , &mut scattered) * ray_color(scattered, background, world, lights.clone(), depth - 1) / pdf_val;
+
     //return Vec3::new(0.0, 0.0, 0.0);
     // let unit_direction: Vec3 = Vec3::unit_vector(r.dir);
     // let t: f64 = 0.5 * (unit_direction.y + 1.0);
@@ -619,7 +669,7 @@ pub fn cornell_box()->HittableList{
     let light = Arc::new(DiffuseLight::new0(Vec3::new(15.0 , 15.0 ,15.0)));
     objects.add(Arc::new(YzRect::new(0.0 , 555.0 , 0.0 , 555.0 , 555.0  ,green.clone())));
     objects.add(Arc::new(YzRect::new(0.0 , 555.0 , 0.0 , 555.0 , 0.0  ,red.clone())));
-    objects.add(Arc::new(XzRect::new(213.0 , 343.0 , 227.0 , 332.0 , 554.0 , light.clone())));
+    objects.add(Arc::new(FlipFace::new(Arc::new(XzRect::new(213.0,343.0,227.0,332.0,554.0,light.clone())))));
     objects.add(Arc::new(XzRect::new(0.0 , 555.0 , 0.0 , 555.0 , 0.0  ,white.clone())));
     objects.add(Arc::new(XzRect::new(0.0 , 555.0 , 0.0 , 555.0 , 555.0  ,white.clone())));
     objects.add(Arc::new(XyRect::new(0.0 , 555.0 , 0.0 , 555.0 , 555.0  ,white.clone())));

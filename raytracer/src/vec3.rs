@@ -15,7 +15,7 @@ pub struct Ray {
     pub time: f64,
 }
 impl Ray {
-    fn new(orig: Vec3, dir: Vec3, time: f64) -> Self {
+    pub fn new(orig: Vec3, dir: Vec3, time: f64) -> Self {
         Self {
             orig: orig,
             dir: dir,
