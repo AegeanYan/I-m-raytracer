@@ -101,3 +101,14 @@ impl Pdf for MixturePdf{
         }
     }
 }
+
+pub struct NoPdf{}
+impl Pdf for NoPdf{
+    fn value(&self, direction: &mut Vec3) -> f64 {
+        unreachable!()
+    }
+
+    fn generate(&self) -> Vec3 {
+        unreachable!()
+    }
+}

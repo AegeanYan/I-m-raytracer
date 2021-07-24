@@ -1,8 +1,11 @@
-use crate::material::{Material, Metal, Lambertian};
-use crate::{MovingSphere, Ray, Vec3, AABB::Aabb, degrees_to_radians};
+use crate::material::{Material, Metal, Lambertian, NoMaterial};
+use crate::{MovingSphere, Ray, Vec3, AABB::Aabb, degrees_to_radians, random_int};
 use std::f64::consts::PI;
 use std::sync::Arc;
 use std::f64::INFINITY;
+use image::imageops::overlay_bounds;
+use crate::onb::Onb;
+use crate::pdf::NoPdf;
 
 #[derive(Clone)]
 pub struct HitRecord {
@@ -96,13 +99,56 @@ impl Hittable for Sphere {
         output_box.maximum = self.center + Vec3::new(self.radius, self.radius, self.radius);
         return true;
     }
-}
+    fn pdf_value(&self , o:Vec3 , v:Vec3)->f64{
+        let mut rec:HitRecord = HitRecord{
+            p: Vec3 {
+                x: 0.0,
+                y: 0.0,
+                z: 0.0
+            },
+            normal: Vec3 {
+                x: 0.0,
+                y: 0.0,
+                z: 0.0
+            },
+            mat_ptr: Arc::new(NoMaterial{}),
+            t: 0.0,
+            u: 0.0,
+            v: 0.0,
+            front_face: true
+        };
+        if !self.hit(Ray::new(o , v , 0.0) , 0.001 , INFINITY , &mut rec) {
+            return 0.0;
+        };
+        let cos_theta_max = (1.0 - self.radius * self.radius / (self.center - o).length_squared());
+        let solid_angle = 2.0 * PI * (1.0 - cos_theta_max);
 
+        return 1.0 / solid_angle;
+    }
+    fn random(&self , o:Vec3)->Vec3{
+        //println!("{:?}",o);
+        let mut direction = self.center - o;
+        let distance_squared = direction.length_squared();
+        let mut uvw:Onb = Onb{
+            axis: [Vec3::new(0.0 , 0.0 ,0.0);3]
+        };
+        uvw.build_from_w(&mut direction);
+
+        return uvw.local0(Vec3::random_to_sphere(self.radius , distance_squared));
+    }
+
+}
+#[derive(Default , Clone)]
 pub struct HittableList {
     pub objects: Vec<Arc<dyn Hittable>>,
 }
 
 impl HittableList {
+    pub fn new()->Self{
+        Self{
+            objects:vec![],
+        }
+    }
     pub fn clear(&mut self) {
         self.objects.clear();
     }
@@ -171,6 +217,19 @@ impl Hittable for HittableList {
             first_box = false;
         }
         return true;
+    }
+    fn pdf_value(&self , o:Vec3 , v:Vec3)->f64{
+        let weight = 1.0 / self.objects.len() as f64;
+        let mut sum = 0.0;
+
+        for object in self.objects.iter() {
+            sum += weight * object.pdf_value(o , v);
+        };
+        return sum;
+    }
+    fn random(&self , o:Vec3)->Vec3{
+        let int_size = self.objects.len() as i32;
+        return self.objects[random_int(0 , int_size - 1) as usize].random(o);
     }
 }
 

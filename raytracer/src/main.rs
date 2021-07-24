@@ -18,7 +18,7 @@ mod pdf;
 use crate::aarect::{XyRect, YzRect, XzRect};
 use crate::camera::Camera;
 use crate::hit::{HitRecord, Hittable, HittableList, Sphere, RotateY, Translate, FlipFace};
-use crate::material::{Dielectric, DiffuseLight, Lambertian, Material, Metal};
+use crate::material::{Dielectric, DiffuseLight, Lambertian, Material, Metal, ScatterRecord, NoMaterial};
 use crate::moving_sphere::MovingSphere;
 use crate::texture::{CheckerTexture, NoiseTexture, ImageTexture};
 use crate::AABB::Aabb;
@@ -33,8 +33,7 @@ pub use vec3::Ray;
 pub use vec3::Vec3;
 use imageproc::distance_transform::Norm::L1;
 use crate::constant_medium::ConstantMedium;
-use std::collections::hash_map::Entry::Vacant;
-use crate::pdf::{CosinePdf, Pdf, HittablePdf, MixturePdf};
+use crate::pdf::{CosinePdf, Pdf, HittablePdf, MixturePdf, NoPdf};
 // fn main() {
 //     let x = Vec3::new(1.0, 1.0, 1.0);
 //     println!("{:?}", x);
@@ -72,11 +71,15 @@ fn main() {
     let mut aspect_ratio: f64 = 1.0;
     let mut image_width: u32 = 600;
     let mut image_height: u32 = (image_width as f64 / aspect_ratio) as u32;
-    let mut samples_per_pixel: u32 = 1000;
-    let mut max_depth: u32 = 5;
+    let mut samples_per_pixel: u32 = 50;
+    let mut max_depth: u32 = 1000;
     let bar = ProgressBar::new(1024);
     let mut img: RgbImage = ImageBuffer::new(image_width, image_height);
-    let lights:Arc<dyn Hittable> = Arc::new(XzRect::new(213.0,343.0,227.0,332.0,554.0 , Arc::new(Metal::new())));
+    let mut lights = HittableList::default();
+    lights.add(Arc::new(XzRect::new(213.0,343.0,227.0,332.0,554.0 , Arc::new(NoMaterial{}))));
+    lights.add(Arc::new(Sphere::new(Vec3::new(190.0,90.0,190.0) , 90.0 , Arc::new(NoMaterial{}))));
+    let lights = Arc::new(lights);
+    //let lights:Arc<dyn Hittable> = Arc::new(XzRect::new(213.0,343.0,227.0,332.0,554.0 , Arc::new(Metal::new())));
     //World
     //let mut world: HittableList = random_scene();
     // let mg:Lambertian = Lambertian{
@@ -261,6 +264,10 @@ fn main() {
             // image_width = 600;
             // image_height = (image_width as f64 / aspect_ratio) as u32;
             // samples_per_pixel = 200;
+            // let mut lights = Arc::new(HittableList::new());
+            // lights.add(Arc::new(XzRect::new(213.0,343.0,227.0,332.0,554.0 , Arc::new(Metal::new()))));
+            // lights.add(Arc::new(Sphere::new(Vec3::new(190.0,90.0,190.0) , 90.0 , Arc::new(Metal::new()))));
+
             background = Vec3::new(0.0 , 0.0 ,0.0);
             lookfrom = Vec3::new(278.0 , 278.0 , -800.0);
             lookat = Vec3::new(278.0 , 278.0 , 0.0);
@@ -323,6 +330,11 @@ fn write_color(pixel_color: &Vec3, samples_per_pixel: u32) -> image::Rgb<u8> {
     let mut b: f64 = pixel_color.z;
 
     let scale: f64 = 1.0 / (samples_per_pixel as f64);
+
+    if r != r {r = 0.0; }
+    if g != g {g = 0.0; }
+    if b != b {b = 0.0; }
+
     r = (r * scale).sqrt();
     g = (g * scale).sqrt();
     b = (b * scale).sqrt();
@@ -402,21 +414,45 @@ fn ray_color(mut r: Ray, background: Vec3, world: &dyn Hittable, lights: Arc<dyn
         },
         time: 0.0,
     };
-    let mut albedo: Vec3 = Vec3 {
-        x: 0.0,
-        y: 0.0,
-        z: 0.0,
+    // let mut albedo: Vec3 = Vec3 {
+    //     x: 0.0,
+    //     y: 0.0,
+    //     z: 0.0,
+    // };
+    let mut srec:ScatterRecord = ScatterRecord {
+        specular_ray: Ray {
+            orig: Vec3 {
+                x: 0.0,
+                y: 0.0,
+                z: 0.0
+            },
+            dir: Vec3 {
+                x: 0.0,
+                y: 0.0,
+                z: 0.0
+            },
+            time: 0.0
+        },
+        is_specular: false,
+        attenuation: Vec3 {
+            x: 0.0,
+            y: 0.0,
+            z: 0.0
+        },
+        pdf_ptr: Arc::new(NoPdf{}),
     };
     let mut emitted: Vec3 = rec.mat_ptr.emitted(&mut r.clone() , &mut rec.clone() , rec.u, rec.v, &mut rec.p);
     let mut pdf_val:f64 = 0.0;
 
     if !rec
         .mat_ptr
-        .scatter(&mut r, &mut rec.clone(), &mut albedo, &mut scattered, &mut pdf_val)
+        .scatter(&mut r, &mut rec.clone(), &mut srec)
     {
         return emitted;
     };
-
+    if srec.is_specular {
+        return srec.attenuation * ray_color(srec.specular_ray , background , world , lights.clone() , depth - 1);
+    }
     // let on_light = Vec3::new(random_double_lim(213.0 , 343.0) , 554.0 , random_double_lim(227.0,332.0));
     // let mut to_light = on_light - rec.p;
     // let distance_squared = to_light.length_squared();
@@ -439,14 +475,17 @@ fn ray_color(mut r: Ray, background: Vec3, world: &dyn Hittable, lights: Arc<dyn
     // scattered.orig = rec.p;
     // scattered.dir = p.generate();
     // scattered.time = r.time;
-    let p0 = Arc::new(HittablePdf::new(lights.clone() , rec.p));
-    let p1 = Arc::new(CosinePdf::new(rec.normal));
-    let mut mixed_pdf = MixturePdf::new(p0, p1);
+    //let p0 = Arc::new(HittablePdf::new(lights.clone() , rec.p));
+    //let p1 = Arc::new(CosinePdf::new(rec.normal));
+    //let mut mixed_pdf = MixturePdf::new(p0, p1);
+    let mut light_ptr = Arc::new(HittablePdf::new(lights.clone() , rec.p));
+    //let mut light_pdf:HittablePdf = HittablePdf::new(lights.clone() , rec.p);
+    let p:MixturePdf = MixturePdf::new(light_ptr , srec.pdf_ptr);
 
-    let mut light_pdf:HittablePdf = HittablePdf::new(lights.clone() , rec.p);
     scattered.orig = rec.p;
-    scattered.dir = mixed_pdf.generate();
+    scattered.dir = p.generate();
     scattered.time = r.time;
+
 
     //return emitted + albedo * ray_color(scattered , background , world , depth - 1);
 
@@ -461,9 +500,14 @@ fn ray_color(mut r: Ray, background: Vec3, world: &dyn Hittable, lights: Arc<dyn
     // return emi + alb * res * rays / pdf_val;
 
     //pdf_val = p.value(&mut scattered.dir);
-    pdf_val = mixed_pdf.value(&mut scattered.dir);
-    return  emitted + albedo * rec.mat_ptr.scattering_pdf(&mut r , &mut rec.clone() , &mut scattered) * ray_color(scattered, background, world, lights.clone(), depth - 1) / pdf_val;
+    //pdf_val = mixed_pdf.value(&mut scattered.dir);
+    pdf_val = p.value(&mut scattered.dir);
+    //return  emitted + albedo * rec.mat_ptr.scattering_pdf(&mut r , &mut rec.clone() , &mut scattered) * ray_color(scattered, background, world, lights.clone(), depth - 1) / pdf_val;
+    let recs = rec.mat_ptr.scattering_pdf(&mut r, &mut rec.clone(), &mut scattered);
 
+
+    let ans = emitted + ray_color(scattered , background , world , lights.clone() , depth - 1) * srec.attenuation * recs / pdf_val;
+    return ans;
     //return Vec3::new(0.0, 0.0, 0.0);
     // let unit_direction: Vec3 = Vec3::unit_vector(r.dir);
     // let t: f64 = 0.5 * (unit_direction.y + 1.0);
@@ -674,15 +718,22 @@ pub fn cornell_box()->HittableList{
     objects.add(Arc::new(XzRect::new(0.0 , 555.0 , 0.0 , 555.0 , 555.0  ,white.clone())));
     objects.add(Arc::new(XyRect::new(0.0 , 555.0 , 0.0 , 555.0 , 555.0  ,white.clone())));
 
+    //let mut aluminum = Arc::new(Metal::news(Vec3::new(0.8,0.85,0.88) , 0.0));
+    //let mut box1:Arc<dyn Hittable> = Arc::new(Boxes::new(Vec3::new(0.0,0.0,0.0),Vec3::new(165.0,330.0,165.0) , aluminum.clone()));
     let mut box1:Arc<dyn Hittable> = Arc::new(Boxes::new(Vec3::new(0.0,0.0,0.0),Vec3::new(165.0,330.0,165.0) , white.clone()));
+
     box1 = Arc::new(RotateY::new(box1 , 15.0));
     box1 = Arc::new(Translate::new(box1 , Vec3::new(265.0 , 0.0 , 295.0)));
     objects.add(box1);
 
-    let mut box2:Arc<dyn Hittable> = Arc::new(Boxes::new(Vec3::new(0.0,0.0,0.0), Vec3::new(165.0,165.0,165.0) , white.clone()));
-    box2 = Arc::new(RotateY::new(box2 , -18.0));
-    box2 = Arc::new(Translate::new(box2 , Vec3::new(130.0 , 0.0 , 65.0)));
-    objects.add(box2);
+
+    // let mut box2:Arc<dyn Hittable> = Arc::new(Boxes::new(Vec3::new(0.0,0.0,0.0), Vec3::new(165.0,165.0,165.0) , white.clone()));
+    // box2 = Arc::new(RotateY::new(box2 , -18.0));
+    // box2 = Arc::new(Translate::new(box2 , Vec3::new(130.0 , 0.0 , 65.0)));
+    // objects.add(box2);
+
+    let glass = Arc::new(Dielectric::new(1.5));
+    objects.add(Arc::new(Sphere::new(Vec3::new(190.0,90.0,190.0) , 90.0 , glass.clone())));
 
     return objects;
 }

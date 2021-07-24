@@ -9,16 +9,18 @@ use std::sync::Arc;
 use std::f64::consts::PI;
 use imageproc::math::l1_norm;
 use crate::onb::Onb;
-use crate::pdf::random_cosine_direction;
+use crate::pdf::{random_cosine_direction, Pdf, CosinePdf, NoPdf};
+use std::ptr::null;
 
 pub trait Material {
     fn scatter(
         &self,
         r_in:&mut Ray,
         rec:&mut hit::HitRecord,
-        albedo: &mut Vec3,
-        scattered: &mut Ray,
-        pdf:&mut f64
+        srec:&mut ScatterRecord,
+        // albedo: &mut Vec3,
+        // scattered: &mut Ray,
+        // pdf:&mut f64
     ) -> bool{
         return false;
     }
@@ -58,9 +60,10 @@ impl Material for Lambertian {
         &self,
         r_in:&mut Ray,
         mut rec:&mut HitRecord,
-        mut albedo: &mut Vec3,
-        scattered: &mut Ray,
-        pdf:&mut f64,
+        mut srec:&mut ScatterRecord,
+        // mut albedo: &mut Vec3,
+        // scattered: &mut Ray,
+        // pdf:&mut f64,
     ) -> bool {
         // let mut scatter_direction: Vec3 = rec.normal + Vec3::random_unit_vector();
         // if scatter_direction.near_zero() {
@@ -103,24 +106,33 @@ impl Material for Lambertian {
 
         //
 
-        let mut uvw:Onb = Onb { axis: [Vec3::new(0.0,0.0,0.0) , Vec3::new(0.0,0.0,0.0) , Vec3::new(0.0,0.0,0.0)] };
-        uvw.build_from_w(&mut rec.normal);
-        let direction = uvw.local0(random_cosine_direction());
-        let ra = Ray{
-            orig: rec.p,
-            dir: Vec3::unit_vector(direction),
-            time: r_in.time,
-        };
-        scattered.orig = ra.orig;
-        scattered.dir = ra.dir;
-        scattered.time = ra.time;
+        // let mut uvw:Onb = Onb { axis: [Vec3::new(0.0,0.0,0.0) , Vec3::new(0.0,0.0,0.0) , Vec3::new(0.0,0.0,0.0)] };
+        // uvw.build_from_w(&mut rec.normal);
+        // let direction = uvw.local0(random_cosine_direction());
+        // let ra = Ray{
+        //     orig: rec.p,
+        //     dir: Vec3::unit_vector(direction),
+        //     time: r_in.time,
+        // };
+        // scattered.orig = ra.orig;
+        // scattered.dir = ra.dir;
+        // scattered.time = ra.time;
+        //
+        // albedo.x = self.albedo.value(rec.u , rec.v , &mut rec.p).x;
+        // albedo.y = self.albedo.value(rec.u , rec.v , &mut rec.p).y;
+        // albedo.z = self.albedo.value(rec.u , rec.v , &mut rec.p).z;
+        //
+        // *pdf = Vec3::dot(uvw.axis[2] , scattered.dir) / PI;
+        // return true;
 
-        albedo.x = self.albedo.value(rec.u , rec.v , &mut rec.p).x;
-        albedo.y = self.albedo.value(rec.u , rec.v , &mut rec.p).y;
-        albedo.z = self.albedo.value(rec.u , rec.v , &mut rec.p).z;
+        srec.is_specular = false;
+        srec.attenuation.x = self.albedo.value(rec.u , rec.v , &mut rec.p).x;
+        srec.attenuation.y = self.albedo.value(rec.u , rec.v , &mut rec.p).y;
+        srec.attenuation.z = self.albedo.value(rec.u , rec.v , &mut rec.p).z;
 
-        *pdf = Vec3::dot(uvw.axis[2] , scattered.dir) / PI;
+        srec.pdf_ptr = Arc::new(CosinePdf::new(rec.normal));
         return true;
+
     }
 }
 
@@ -134,23 +146,31 @@ impl Material for Metal {
         &self,
         r_in:&mut Ray,
         rec:&mut  HitRecord,
-        attenuation: &mut Vec3,
-        scattered: &mut Ray,
-        pdf:&mut f64
+        // attenuation: &mut Vec3,
+        // scattered: &mut Ray,
+        // pdf:&mut f64
+        srec:&mut ScatterRecord
     ) -> bool {
         let reflected: Vec3 = Vec3::reflect(Vec3::unit_vector(r_in.dir), rec.normal);
-        let ra = Ray {
-            orig: rec.p,
-            dir: reflected + Vec3::random_in_unit_sphere() * self.fuzz,
-            time: r_in.time,
-        };
-        scattered.dir = ra.dir;
-        scattered.orig = ra.orig;
-        scattered.time = ra.time;
-        attenuation.x = self.albedo.x;
-        attenuation.y = self.albedo.y;
-        attenuation.z = self.albedo.z;
-        return Vec3::dot(scattered.dir, rec.normal) > 0.0;
+        // let ra = Ray {
+        //     orig: rec.p,
+        //     dir: reflected + Vec3::random_in_unit_sphere() * self.fuzz,
+        //     time: r_in.time,
+        // };
+        // scattered.dir = ra.dir;
+        // scattered.orig = ra.orig;
+        // scattered.time = ra.time;
+        // attenuation.x = self.albedo.x;
+        // attenuation.y = self.albedo.y;
+        // attenuation.z = self.albedo.z;
+        srec.specular_ray.orig = rec.p;
+        srec.specular_ray.dir = reflected + Vec3::random_in_unit_sphere() * self.fuzz;
+        srec.specular_ray.time = 0.0;
+        srec.attenuation = self.albedo;
+        srec.is_specular = true;
+        srec.pdf_ptr = Arc::new(NoPdf{});
+        //return Vec3::dot(scattered.dir, rec.normal) > 0.0;
+        return true;
     }
 }
 
@@ -162,7 +182,10 @@ impl Metal {
         }
     }
 
-    pub fn news(albedo: Vec3, fuzz: f64) -> Self {
+    pub fn news(albedo: Vec3, mut fuzz: f64) -> Self {
+        if fuzz > 1.0 {
+            fuzz = 1.0;
+        }
         Self {
             albedo: albedo,
             fuzz: fuzz,
@@ -181,44 +204,75 @@ impl Material for Dielectric {
         &self,
         r_in:&mut Ray,
         rec:&mut HitRecord,
-        attenuation: &mut Vec3,
-        scattered: &mut Ray,
-        pdf:&mut f64
+        // mut attenuation: &mut Vec3,
+        // scattered: &mut Ray,
+        // pdf:&mut f64
+        srec:&mut ScatterRecord
     ) -> bool {
-        attenuation.x = 1.0;
-        attenuation.y = 1.0;
-        attenuation.z = 1.0;
-        scattered.time = r_in.time;
-        let etai_over_etat: f64;
+        // attenuation.x = 1.0;
+        // attenuation.y = 1.0;
+        // attenuation.z = 1.0;
+        // scattered.time = r_in.time;
+        // let etai_over_etat: f64;
+        // if rec.front_face {
+        //     etai_over_etat = 1.0 / self.ref_idx;
+        // } else {
+        //     etai_over_etat = self.ref_idx;
+        // }
+        // let unit_direction: Vec3 = Vec3::unit_vector(r_in.dir);
+        // let cos_theta: f64;
+        // if Vec3::dot(unit_direction * -1.0, rec.normal) < 1.0 {
+        //     cos_theta = Vec3::dot(unit_direction * -1.0, rec.normal);
+        // } else {
+        //     cos_theta = 1.0;
+        // }
+        // let sin_theta: f64 = (1.0 - cos_theta * cos_theta).sqrt();
+        // if etai_over_etat * sin_theta > 1.0 {
+        //     let reflected: Vec3 = Vec3::reflect(unit_direction, rec.normal);
+        //     scattered.orig = rec.p;
+        //     scattered.dir = reflected;
+        //     return true;
+        // }
+        // let reflect_prob = Dielectric::schlick(cos_theta, etai_over_etat);
+        // if random_double() < reflect_prob {
+        //     let reflected: Vec3 = Vec3::reflect(unit_direction, rec.normal);
+        //     scattered.orig = rec.p;
+        //     scattered.dir = reflected;
+        //     return true;
+        // }
+        // let refracted: Vec3 = Vec3::refract(unit_direction, rec.normal, etai_over_etat);
+        // scattered.orig = rec.p;
+        // scattered.dir = refracted;
+        // return true;
+        srec.is_specular = true;
+        srec.pdf_ptr = Arc::new(NoPdf{});
+        srec.attenuation = Vec3::new(1.0,1.0,1.0);
+        //attenuation = &mut Vec3::new(1.0, 1.0, 1.0);
+        let refraction_ratio:f64;
         if rec.front_face {
-            etai_over_etat = 1.0 / self.ref_idx;
-        } else {
-            etai_over_etat = self.ref_idx;
-        }
-        let unit_direction: Vec3 = Vec3::unit_vector(r_in.dir);
-        let cos_theta: f64;
-        if Vec3::dot(unit_direction * -1.0, rec.normal) < 1.0 {
-            cos_theta = Vec3::dot(unit_direction * -1.0, rec.normal);
-        } else {
-            cos_theta = 1.0;
-        }
-        let sin_theta: f64 = (1.0 - cos_theta * cos_theta).sqrt();
-        if etai_over_etat * sin_theta > 1.0 {
-            let reflected: Vec3 = Vec3::reflect(unit_direction, rec.normal);
-            scattered.orig = rec.p;
-            scattered.dir = reflected;
-            return true;
-        }
-        let reflect_prob = Dielectric::schlick(cos_theta, etai_over_etat);
-        if random_double() < reflect_prob {
-            let reflected: Vec3 = Vec3::reflect(unit_direction, rec.normal);
-            scattered.orig = rec.p;
-            scattered.dir = reflected;
-            return true;
-        }
-        let refracted: Vec3 = Vec3::refract(unit_direction, rec.normal, etai_over_etat);
-        scattered.orig = rec.p;
-        scattered.dir = refracted;
+            refraction_ratio = 1.0 / self.ref_idx;
+        }else {
+            refraction_ratio = self.ref_idx;
+        };
+
+        let unit_direction:Vec3 = Vec3::unit_vector(r_in.dir);
+        let cos_theta = Vec3::dot(unit_direction * (-1.0) , rec.normal).min(1.0);
+        let sin_theta = (1.0 - cos_theta * cos_theta).sqrt();
+
+        let cannot_refract:bool = refraction_ratio * sin_theta > 1.0;
+        let direction:Vec3;
+        if cannot_refract || Dielectric::schlick(cos_theta , refraction_ratio) > random_double(){
+            direction = Vec3::reflect(unit_direction , rec.normal);
+        }else {
+            direction = Vec3::refract(unit_direction , rec.normal , refraction_ratio);
+        };
+
+        // scattered.orig = rec.p;
+        // scattered.dir = direction;
+        // scattered.time = 0.0;
+        srec.specular_ray.orig = rec.p;
+        srec.specular_ray.dir = direction;
+        srec.specular_ray.time = r_in.time;
         return true;
     }
 }
@@ -255,9 +309,10 @@ impl Material for DiffuseLight {
         &self,
         r_in:&mut Ray,
         rec:&mut HitRecord,
-        attenuation: &mut Vec3,
-        scattered: &mut Ray,
-        pdf:&mut f64
+        // attenuation: &mut Vec3,
+        // scattered: &mut Ray,
+        // pdf:&mut f64
+        srec:&mut ScatterRecord
     ) -> bool {
         return false;
     }
@@ -290,14 +345,51 @@ impl Isotropiuc{
 }
 
 impl Material for Isotropiuc{
-    fn scatter(&self, r_in:&mut Ray, mut rec:&mut HitRecord, mut attenuation: &mut Vec3, mut scattered: &mut Ray , pdf:&mut f64) -> bool {
-        scattered.orig = rec.p;
-        scattered.dir = Vec3::random_in_unit_sphere();
-        scattered.time = r_in.time;
+    fn scatter(&self, r_in:&mut Ray, mut rec:&mut HitRecord, srec:&mut ScatterRecord) -> bool {
+        srec.specular_ray.orig = rec.p;
+        srec.specular_ray.dir = Vec3::random_in_unit_sphere();
+        srec.specular_ray.time = r_in.time;
 
-        attenuation.x = self.albedo.value(rec.u, rec.v, &mut rec.p).x;
-        attenuation.y = self.albedo.value(rec.u, rec.v, &mut rec.p).y;
-        attenuation.z = self.albedo.value(rec.u, rec.v, &mut rec.p).z;
+
+        // scattered.orig = rec.p;
+        // scattered.dir = Vec3::random_in_unit_sphere();
+        // scattered.time = r_in.time;
+        //
+        // attenuation.x = self.albedo.value(rec.u, rec.v, &mut rec.p).x;
+        // attenuation.y = self.albedo.value(rec.u, rec.v, &mut rec.p).y;
+        // attenuation.z = self.albedo.value(rec.u, rec.v, &mut rec.p).z;
+
+        srec.attenuation.x = self.albedo.value(rec.u , rec.v , &mut rec.p).x;
+        srec.attenuation.y = self.albedo.value(rec.u , rec.v , &mut rec.p).y;
+        srec.attenuation.z = self.albedo.value(rec.u , rec.v , &mut rec.p).z;
         return true;
+    }
+}
+
+pub struct ScatterRecord {
+    pub specular_ray:Ray,
+    pub is_specular:bool,
+    pub attenuation:Vec3,
+    pub pdf_ptr:Arc<dyn Pdf>,
+}
+
+pub struct NoMaterial{}
+impl Material for NoMaterial{
+    fn scatter(
+        &self,
+        r_in:&mut Ray,
+        rec:&mut hit::HitRecord,
+        srec:&mut ScatterRecord,
+        // albedo: &mut Vec3,
+        // scattered: &mut Ray,
+        // pdf:&mut f64
+    ) -> bool{
+        unreachable!()
+    }
+    fn scattering_pdf(&self , r_in:&mut Ray , rec:&mut hit::HitRecord , scattered:&mut Ray)->f64{
+        unreachable!()
+    }
+    fn emitted(&self, r_in:&mut Ray , rec:&mut hit::HitRecord , u: f64, v: f64, p: &mut Vec3) -> Vec3 {
+        unreachable!()
     }
 }
