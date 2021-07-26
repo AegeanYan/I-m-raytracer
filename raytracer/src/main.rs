@@ -72,7 +72,7 @@ fn main() {
     let mut image_width: u32 = 600;
     let mut image_height: u32 = (image_width as f64 / aspect_ratio) as u32;
     let mut samples_per_pixel: u32 = 50;
-    let mut max_depth: u32 = 1000;
+    let mut max_depth: u32 = 10;
     let bar = ProgressBar::new(1024);
     let mut img: RgbImage = ImageBuffer::new(image_width, image_height);
     let mut lights = HittableList::default();
@@ -220,7 +220,7 @@ fn main() {
     let mut vfov: f64 = 40.0;
     let mut aperture: f64 = 0.0;
     let mut background: Vec3 = Vec3::new(0.0, 0.0, 0.0);
-    let op = 5;
+    let op = 3;
     match op {
         0 => {
             world = random_scene();
@@ -672,7 +672,7 @@ pub fn two_perlin_spheres() -> HittableList {
 
 pub fn earth() -> HittableList {
     let mut objects: HittableList = HittableList { objects: vec![] };
-    let earth_texture = Arc::new(texture::ImageTexture::new("earthmap.jpeg"));
+    let earth_texture = Arc::new(texture::ImageTexture::new("earthmap.jpg"));
     //let earth_surface = Arc::new(Lambertian::news(earth_texture));
     let sph = Sphere {
         center: Vec3::new(0.0, 0.0, 0.0),
