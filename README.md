@@ -126,3 +126,32 @@ ACM伪摄影公司，简称PPCA，于2021年成立😉
   * [yaml-rust](https://docs.rs/yaml-rust/0.4.4/yaml_rust/)
   * 通常来说，你并不需要使用到下面这个序列化/反序列化的包。
   * [serde](https://serde.rs)
+
+
+必做部分：
+
+- [x] book 1
+- [x] 3 BVH
+- [x] 7 Rectangles and Lights
+
+选做部分：
+
+- [x] 2 Motion Blur
+- [x] 4 Solid Textures
+- [x] 5 Perlin Noise
+- [x] 6 Image Texture Mapping
+- [x] 8 Instances
+- [x] 9 Volumes
+- [x] 10 book 2 final scene
+
+Bonus tracks：
+
+- [x] Track 1
+- [x] Track 2
+- [ ] Track 3
+- [x] Track 4
+- [ ] Track 5
+- [x] Track 6
+- [x] Track 7
+  - [ ] 手写obj_loader
+
