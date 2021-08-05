@@ -1,5 +1,5 @@
 use crate::hit::HitRecord;
-use crate::material::{Material};
+use crate::material::Material;
 use crate::Vec3;
 use crate::AABB::Aabb;
 use crate::{random_double_lim, Hittable};
