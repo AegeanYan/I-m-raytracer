@@ -164,7 +164,7 @@ impl<T: Texture> LambertianStatic<T> {
     }
 }
 impl<T: Texture> Material for LambertianStatic<T> {
-    fn scatter(&self, _r_in: &mut Ray, rec: &mut HitRecord, mut srec: &mut ScatterRecord)-> bool {
+    fn scatter(&self, _r_in: &mut Ray, rec: &mut HitRecord, mut srec: &mut ScatterRecord) -> bool {
         srec.is_specular = false;
         srec.attenuation = self.albedo.value(rec.u, rec.v, &mut rec.p).clone();
         srec.pdf_ptr = CosinePdf::new(rec.normal);
