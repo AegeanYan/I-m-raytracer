@@ -469,7 +469,7 @@ fn ray_color(
     //     v: 0.0,
     //     front_face: true,
     // };
-    let mut rec:HitRecord;
+    let mut rec: HitRecord;
     #[deny(clippy::absurd_extreme_comparisons)]
     if depth == 0 {
         return Vec3::new(0.0, 0.0, 0.0);

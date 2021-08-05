@@ -148,7 +148,7 @@ impl<T: Material + Clone> Hittable for XzRect<T> {
         //     v: 0.0,
         //     front_face: false,
         // };
-        let mut rec:HitRecord;
+        let mut rec: HitRecord;
         match self.hit(Ray::new(origin, v, 0.0), 0.001, INFINITY) {
             Some(rec_) => {
                 rec = rec_;
