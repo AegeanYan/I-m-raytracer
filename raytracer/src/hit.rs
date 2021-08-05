@@ -92,9 +92,9 @@ impl<T: Material> Hittable for Sphere<T> {
                     p,
                     normal: outward_normal.mul(flag),
                     mat_ptr: &(self.mat_ptr),
-                    t:ti,
-                    u:ui,
-                    v:vi,
+                    t: ti,
+                    u: ui,
+                    v: vi,
                     front_face,
                 });
             }
@@ -111,12 +111,12 @@ impl<T: Material> Hittable for Sphere<T> {
                     flag = -1.0;
                 }
                 return Option::from(HitRecord {
-                    p:pi,
+                    p: pi,
                     normal: outward_normal.mul(flag),
                     mat_ptr: &(self.mat_ptr),
-                    t:ti,
-                    u:ui,
-                    v:vi,
+                    t: ti,
+                    u: ui,
+                    v: vi,
                     front_face,
                 });
             }

@@ -50,12 +50,12 @@ impl<T: Material + Clone> Hittable for XyRect<T> {
             flag = 1.0;
         }
         Some(HitRecord {
-            p:pi,
+            p: pi,
             normal: outward_normal.mul(flag),
             mat_ptr: &self.mp,
-            t:ti,
-            u:ui,
-            v:vi,
+            t: ti,
+            u: ui,
+            v: vi,
             front_face,
         })
     }
@@ -112,12 +112,12 @@ impl<T: Material + Clone> Hittable for XzRect<T> {
             flag = 1.0;
         }
         Some(HitRecord {
-            p:pi,
+            p: pi,
             normal: outward_normal.mul(flag),
             mat_ptr: &self.mp,
-            t:ti,
-            u:ui,
-            v:vi,
+            t: ti,
+            u: ui,
+            v: vi,
             front_face,
         })
     }
@@ -214,12 +214,12 @@ impl<T: Material + Clone> Hittable for YzRect<T> {
             flag = 1.0;
         }
         Some(HitRecord {
-            p:pi,
+            p: pi,
             normal: outward_normal.mul(flag),
             mat_ptr: &self.mp,
-            t:ti,
-            u:ui,
-            v:vi,
+            t: ti,
+            u: ui,
+            v: vi,
             front_face,
         })
     }

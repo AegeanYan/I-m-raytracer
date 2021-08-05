@@ -89,12 +89,12 @@ impl<T: Material> Hittable for MovingSphere<T> {
         let mut vi = 0.0;
         Sphere::<Lambertian>::get_sphere_uv(outward_normal, &mut ui, &mut vi);
         return Some(HitRecord {
-            p:pi,
+            p: pi,
             normal: outward_normal.mul(flag),
             mat_ptr: &self.mat_ptr,
-            t:ti,
-            u:ui,
-            v:vi,
+            t: ti,
+            u: ui,
+            v: vi,
             front_face,
         });
     }
