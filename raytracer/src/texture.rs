@@ -105,6 +105,7 @@ impl ImageTexture {
         //     bytes_per_scanline: 0,
         //     data: ima.clone(),
         // }
+        #[allow(deprecated)]
         let ima = image::open(filename).expect("failed").to_rgb();
         let w = ima.width();
         let h = ima.height();
