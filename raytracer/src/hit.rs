@@ -1,4 +1,4 @@
-use crate::material::{Lambertian, Material, Metal, NoMaterial};
+use crate::material::{Lambertian, Material, Metal};
 use crate::onb::Onb;
 use crate::{degrees_to_radians, random_int, MovingSphere, Ray, Vec3, AABB::Aabb};
 use std::f64::consts::PI;
