@@ -1,16 +1,16 @@
 use crate::hit::{HitRecord, Sphere};
 use crate::material;
+use crate::material::Lambertian;
 use crate::Hittable;
 use crate::Material;
 use crate::Vec3;
 use crate::{hit, Ray, AABB::Aabb};
 use std::cmp::{max, min};
-use std::sync::Arc;
 use std::fs::read;
 use std::ops::Mul;
-use crate::material::Lambertian;
+use std::sync::Arc;
 
-pub struct MovingSphere<T:Material> {
+pub struct MovingSphere<T: Material> {
     pub center0: Vec3,
     pub center1: Vec3,
     pub time0: f64,
@@ -19,19 +19,12 @@ pub struct MovingSphere<T:Material> {
     pub mat_ptr: T,
 }
 
-impl<T:Material> MovingSphere<T>{
+impl<T: Material> MovingSphere<T> {
     pub fn center(&self, time: f64) -> Vec3 {
         return self.center0
             + (self.center1 - self.center0) * (time - self.time0) / (self.time1 - self.time0);
     }
-    pub fn new(
-        cen0: Vec3,
-        cen1: Vec3,
-        time0: f64,
-        time1: f64,
-        r: f64,
-        m: T,
-    ) -> Self {
+    pub fn new(cen0: Vec3, cen1: Vec3, time0: f64, time1: f64, r: f64, m: T) -> Self {
         Self {
             center0: cen0,
             center1: cen1,
@@ -60,7 +53,9 @@ impl<T:Material> MovingSphere<T>{
     }
 }
 
-impl<T:Material> Hittable for MovingSphere<T> {
+impl<T: Material> Hittable for MovingSphere<T> {
+    #[allow(clippy::suspicious_operation_groupings)]
+    #[warn(clippy::many_single_char_names)]
     fn hit(&self, r: Ray, t_min: f64, t_max: f64) -> Option<HitRecord> {
         let oc: Vec3 = r.orig - MovingSphere::center(self, r.time);
         let a: f64 = r.dir.length_squared();
@@ -90,23 +85,24 @@ impl<T:Material> Hittable for MovingSphere<T> {
         // return true;
         let t = root;
         let p = r.at(t);
-        let outward_normal = (p - MovingSphere::center(self , r.time)) / self.radius;
-        let front_face = (Vec3::dot(r.dir , outward_normal.clone()) < 0.0);
+        let outward_normal = (p - MovingSphere::center(self, r.time)) / self.radius;
+        let front_face = (Vec3::dot(r.dir, outward_normal.clone()) < 0.0);
         let mut flag = 1.0;
-        if !front_face {flag = -1.0; };
+        if !front_face {
+            flag = -1.0;
+        };
         let mut u = 0.0;
         let mut v = 0.0;
-        Sphere::<Lambertian>::get_sphere_uv(outward_normal , &mut u , &mut v);
-        return Some(HitRecord{
+        Sphere::<Lambertian>::get_sphere_uv(outward_normal, &mut u, &mut v);
+        return Some(HitRecord {
             p,
             normal: outward_normal.mul(flag),
             mat_ptr: &self.mat_ptr,
             t,
             u,
             v,
-            front_face
-        })
-
+            front_face,
+        });
     }
 
     fn bounding_box(&self, time0: f64, time1: f64, output_box: &mut Aabb) -> bool {

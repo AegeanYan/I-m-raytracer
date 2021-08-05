@@ -1,18 +1,18 @@
-use crate::{hit, random_double_lim};
 use crate::hit::HitRecord;
 use crate::onb::Onb;
-use crate::pdf::{random_cosine_direction, CosinePdf, NoPdf, Pdf};
+use crate::pdf::{random_cosine_direction, CosinePdf, NoPdf};
 use crate::random_double;
 use crate::texture::SolidColor;
 use crate::texture::Texture;
 use crate::Ray;
 use crate::Vec3;
+use crate::{hit, random_double_lim};
 use imageproc::math::l1_norm;
 use std::f64::consts::PI;
 use std::ptr::null;
 use std::sync::Arc;
 
-pub trait Material:Send + Sync {
+pub trait Material: Send + Sync {
     fn scatter(
         &self,
         r_in: &mut Ray,
@@ -142,21 +142,21 @@ impl Material for Lambertian {
     }
 }
 #[derive(Copy, Clone)]
-pub struct LambertianStatic<T:Texture>{
+pub struct LambertianStatic<T: Texture> {
     pub albedo: T,
 }
 
-impl<T:Texture> LambertianStatic<T> {
+impl<T: Texture> LambertianStatic<T> {
     pub fn news(a: T) -> Self {
         Self { albedo: a }
     }
-    pub fn new(a:Vec3) -> LambertianStatic<SolidColor>{
-        LambertianStatic{
-            albedo:SolidColor::new(a),
+    pub fn new(a: Vec3) -> LambertianStatic<SolidColor> {
+        LambertianStatic {
+            albedo: SolidColor::new(a),
         }
     }
 }
-impl<T:Texture> Material for LambertianStatic<T> {
+impl<T: Texture> Material for LambertianStatic<T> {
     fn scatter(
         &self,
         r_in: &mut Ray,
@@ -210,7 +210,7 @@ impl Material for Metal {
         srec.specular_ray.time = r_in.time;
         srec.attenuation = self.albedo;
         srec.is_specular = true;
-        srec.pdf_ptr = CosinePdf::new(Vec3::new(0.0,0.0,0.0));
+        srec.pdf_ptr = CosinePdf::new(Vec3::new(0.0, 0.0, 0.0));
         //return Vec3::dot(scattered.dir, rec.normal) > 0.0;
         return true;
     }
@@ -228,10 +228,7 @@ impl Metal {
         if fuzz > 1.0 {
             fuzz = 1.0;
         }
-        Self {
-            albedo: albedo,
-            fuzz: fuzz,
-        }
+        Self { albedo, fuzz }
     }
 }
 
@@ -287,7 +284,7 @@ impl Material for Dielectric {
         // scattered.dir = refracted;
         // return true;
         srec.is_specular = true;
-        srec.pdf_ptr = CosinePdf::new(Vec3::new(0.0,0.0,0.0));
+        srec.pdf_ptr = CosinePdf::new(Vec3::new(0.0, 0.0, 0.0));
         srec.attenuation = Vec3::new(1.0, 1.0, 1.0);
         //attenuation = &mut Vec3::new(1.0, 1.0, 1.0);
         let refraction_ratio: f64;
@@ -326,7 +323,7 @@ impl Dielectric {
     }
 
     pub fn new(ref_idx: f64) -> Self {
-        Self { ref_idx: ref_idx }
+        Self { ref_idx }
     }
 }
 #[derive(Clone)]
@@ -375,17 +372,16 @@ impl Material for DiffuseLight {
     }
 }
 #[derive(Clone)]
-pub struct DiffuseLightStatic<T:Texture>{
-    pub emit:T,
+pub struct DiffuseLightStatic<T: Texture> {
+    pub emit: T,
 }
-impl<T:Texture> DiffuseLightStatic<T> {
-    pub fn new(a:T) -> Self {
+impl<T: Texture> DiffuseLightStatic<T> {
+    pub fn new(a: T) -> Self {
         Self { emit: a }
     }
-
 }
 
-impl<T:Texture> Material for DiffuseLightStatic<T> {
+impl<T: Texture> Material for DiffuseLightStatic<T> {
     fn scatter(
         &self,
         r_in: &mut Ray,
@@ -413,11 +409,11 @@ impl<T:Texture> Material for DiffuseLightStatic<T> {
         }
     }
 }
-pub struct Isotropiuc<T:Texture> {
+pub struct Isotropiuc<T: Texture> {
     pub albedo: T,
 }
 
-impl<T:Texture> Isotropiuc<T> {
+impl<T: Texture> Isotropiuc<T> {
     pub fn new0(a: T) -> Self {
         Self { albedo: a }
     }
@@ -428,7 +424,7 @@ impl<T:Texture> Isotropiuc<T> {
         }
     }
 }
-impl<T:Texture> Material for Isotropiuc<T> {
+impl<T: Texture> Material for Isotropiuc<T> {
     fn scatter(&self, r_in: &mut Ray, mut rec: &mut HitRecord, srec: &mut ScatterRecord) -> bool {
         srec.specular_ray.orig = rec.p;
         srec.specular_ray.dir = Vec3::random_in_unit_sphere();
@@ -445,7 +441,7 @@ impl<T:Texture> Material for Isotropiuc<T> {
         // srec.attenuation.x = self.albedo.value(rec.u, rec.v, &mut rec.p).x;
         // srec.attenuation.y = self.albedo.value(rec.u, rec.v, &mut rec.p).y;
         // srec.attenuation.z = self.albedo.value(rec.u, rec.v, &mut rec.p).z;
-        srec.attenuation = self.albedo.value(rec.u , rec.v , &mut rec.p).clone();
+        srec.attenuation = self.albedo.value(rec.u, rec.v, &mut rec.p).clone();
         srec.is_specular = false;
         srec.pdf_ptr = CosinePdf::new(rec.normal);
         return true;
@@ -469,26 +465,25 @@ impl<T:Texture> Material for Isotropiuc<T> {
         v: f64,
         p: &mut Vec3,
     ) -> Vec3 {
-        return Vec3::new(0.0,0.0,0.0);
+        return Vec3::new(0.0, 0.0, 0.0);
     }
 }
-pub struct IsotropiucStatic<T:Texture>{
-    pub albedo:T,
+pub struct IsotropiucStatic<T: Texture> {
+    pub albedo: T,
 }
-impl<T:Texture> IsotropiucStatic<T> {
-    pub fn new0(a:T) -> Self {
+impl<T: Texture> IsotropiucStatic<T> {
+    pub fn new0(a: T) -> Self {
         Self { albedo: a }
     }
-
 }
 
-impl<T:Texture> Material for IsotropiucStatic<T> {
+impl<T: Texture> Material for IsotropiucStatic<T> {
     fn scatter(&self, r_in: &mut Ray, mut rec: &mut HitRecord, srec: &mut ScatterRecord) -> bool {
         srec.specular_ray.orig = rec.p;
         srec.specular_ray.dir = Vec3::random_in_unit_sphere();
         srec.specular_ray.time = r_in.time;
 
-        srec.attenuation = self.albedo.value(rec.u , rec.v , &mut rec.p).clone();
+        srec.attenuation = self.albedo.value(rec.u, rec.v, &mut rec.p).clone();
         srec.is_specular = false;
         srec.pdf_ptr = CosinePdf::new(rec.normal);
         return true;
@@ -509,7 +504,7 @@ impl<T:Texture> Material for IsotropiucStatic<T> {
         v: f64,
         p: &mut Vec3,
     ) -> Vec3 {
-        return Vec3::new(0.0,0.0,0.0);
+        return Vec3::new(0.0, 0.0, 0.0);
     }
 }
 

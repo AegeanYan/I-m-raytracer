@@ -14,6 +14,7 @@ pub struct Camera {
 }
 
 impl Camera {
+    #[allow(clippy::too_many_arguments)]
     pub fn new() -> Self {
         let aspect_ratio: f64 = 16.0 / 9.0;
         let viewport_height: f64 = 2.0;
@@ -142,11 +143,11 @@ impl Camera {
             horizontal: hori,
             vertical: verti,
             lens_radius: aperture / 2.0,
-            time0: time0,
+            time0,
             w: ww,
             u: uu,
             v: vv,
-            time1: time1,
+            time1,
         }
     }
 }

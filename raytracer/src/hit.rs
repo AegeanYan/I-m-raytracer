@@ -1,25 +1,25 @@
 use crate::material::{Lambertian, Material, Metal, NoMaterial};
 use crate::onb::Onb;
 use crate::pdf::NoPdf;
-use crate::{degrees_to_radians, random_int, MovingSphere, Ray, Vec3, AABB::Aabb, random_double};
+use crate::{degrees_to_radians, random_double, random_int, MovingSphere, Ray, Vec3, AABB::Aabb};
 use image::imageops::overlay_bounds;
 use std::f64::consts::PI;
 use std::f64::INFINITY;
+use std::ops::{Add, Div, Mul, Sub};
 use std::sync::Arc;
-use std::ops::{Sub, Div, Mul, Add};
 
 #[derive(Clone)]
 pub struct HitRecord<'a> {
     pub p: Vec3,      //交点
     pub normal: Vec3, //法向量
-    pub mat_ptr:&'a dyn Material,
+    pub mat_ptr: &'a dyn Material,
     pub t: f64, //距离
     pub u: f64,
     pub v: f64,
     pub front_face: bool,
 }
 
-impl <'a>HitRecord<'a>{
+impl<'a> HitRecord<'a> {
     pub fn set_face_normal(&mut self, r: Ray, outward_normal: Vec3) {
         self.front_face = Vec3::dot(r.dir, outward_normal) < 0.0;
         if self.front_face == true {
@@ -30,7 +30,7 @@ impl <'a>HitRecord<'a>{
     }
 }
 
-pub trait Hittable:Send+Sync {
+pub trait Hittable: Send + Sync {
     fn hit(&self, r: Ray, t_min: f64, t_max: f64) -> Option<HitRecord>;
     fn bounding_box(&self, time0: f64, time1: f64, output_box: &mut Aabb) -> bool;
     fn pdf_value(&self, o: Vec3, v: Vec3) -> f64 {
@@ -42,18 +42,19 @@ pub trait Hittable:Send+Sync {
 }
 
 #[derive(Copy, Clone)]
-pub struct Sphere<T:Material> {
+pub struct Sphere<T: Material> {
     pub center: Vec3,
     pub radius: f64,
     pub mat_ptr: T,
 }
-impl<T:Material> Sphere<T> {
+impl<T: Material> Sphere<T> {
+    #[warn(clippy::deref_addrof)]
     pub fn get_sphere_uv(p: Vec3, u: &mut f64, v: &mut f64) {
         let theta: f64 = (-p.y).acos();
         let phi: f64 = (-p.z).atan2(p.x) + PI;
 
-        *u = *&mut (phi / (2.0 * PI));
-        *v = *&mut (theta / PI);
+        *u = phi / (2.0 * PI);
+        *v = theta / PI;
     }
     pub fn new(cen: Vec3, r: f64, m: T) -> Self {
         Self {
@@ -63,7 +64,9 @@ impl<T:Material> Sphere<T> {
         }
     }
 }
-impl<T:Material> Hittable for Sphere<T> {
+impl<T: Material> Hittable for Sphere<T> {
+    #[allow(clippy::suspicious_operation_groupings)]
+    #[warn(clippy::many_single_char_names)]
     fn hit(&self, r: Ray, t_min: f64, t_max: f64) -> Option<HitRecord> {
         let oc: Vec3 = r.orig - self.center;
         let a: f64 = r.dir.length_squared();
@@ -81,21 +84,21 @@ impl<T:Material> Hittable for Sphere<T> {
                 let outward_normal = (p.sub(self.center.clone()).div(self.radius));
                 let mut u = 0.0;
                 let mut v = 0.0;
-                Sphere::<Metal>::get_sphere_uv(outward_normal , &mut u  ,&mut v);
-                let front_face = (Vec3::dot(r.dir , outward_normal) < 0.0);
+                Sphere::<Metal>::get_sphere_uv(outward_normal, &mut u, &mut v);
+                let front_face = (Vec3::dot(r.dir, outward_normal) < 0.0);
                 let mut flag = 1.0;
                 if !front_face {
                     flag = -1.0;
                 }
-                return Option::from(HitRecord{
+                return Option::from(HitRecord {
                     p,
                     normal: outward_normal.mul(flag),
                     mat_ptr: &(self.mat_ptr),
                     t,
                     u,
                     v,
-                    front_face
-                })
+                    front_face,
+                });
             }
             t = (-half_b + root) / a;
             if t > t_min && t < t_max {
@@ -103,21 +106,21 @@ impl<T:Material> Hittable for Sphere<T> {
                 let outward_normal = (p.sub(self.center.clone()).div(self.radius));
                 let mut u = 0.0;
                 let mut v = 0.0;
-                Sphere::<Metal>::get_sphere_uv(outward_normal , &mut u  ,&mut v);
-                let front_face = (Vec3::dot(r.dir , outward_normal) < 0.0);
+                Sphere::<Metal>::get_sphere_uv(outward_normal, &mut u, &mut v);
+                let front_face = (Vec3::dot(r.dir, outward_normal) < 0.0);
                 let mut flag = 1.0;
                 if !front_face {
                     flag = -1.0;
                 }
-                return Option::from(HitRecord{
+                return Option::from(HitRecord {
                     p,
                     normal: outward_normal.mul(flag),
                     mat_ptr: &(self.mat_ptr),
                     t,
                     u,
                     v,
-                    front_face
-                })
+                    front_face,
+                });
             }
         }
         return None;
@@ -140,7 +143,7 @@ impl<T:Material> Hittable for Sphere<T> {
                 y: 0.0,
                 z: 0.0,
             },
-            mat_ptr: &NoMaterial{},
+            mat_ptr: &NoMaterial {},
             t: 0.0,
             u: 0.0,
             v: 0.0,
@@ -149,7 +152,7 @@ impl<T:Material> Hittable for Sphere<T> {
         // if !self.hit(Ray::new(o, v, 0.0), 0.001, INFINITY, &mut rec) {
         //     return 0.0;
         // };
-        match self.hit(Ray::new(o , v , 0.0) , 0.001 , INFINITY) {
+        match self.hit(Ray::new(o, v, 0.0), 0.001, INFINITY) {
             Some(rec_) => {
                 rec = rec_;
             }
@@ -171,17 +174,19 @@ impl<T:Material> Hittable for Sphere<T> {
         };
         uvw.build_from_w(&mut direction);
         if distance_squared == 0.0 {
-            return Vec3::new(1.0,1.0,1.0);
+            return Vec3::new(1.0, 1.0, 1.0);
         }
         return uvw.local0(Vec3::random_to_sphere(self.radius, distance_squared));
     }
 }
+#[allow(clippy::float_cmp)]
 #[derive(Default, Clone)]
 pub struct HittableList {
     pub objects: Vec<Arc<dyn Hittable>>,
 }
 
 impl HittableList {
+    #[allow(clippy::new_without_default)]
     pub fn new() -> Self {
         Self { objects: vec![] }
     }
@@ -219,10 +224,10 @@ impl Hittable for HittableList {
         //     }
         // }
         // return hit_anything;
-        let mut rec_mid:Option<HitRecord> = None;
+        let mut rec_mid: Option<HitRecord> = None;
         let mut closest_so_far = t_max;
         for object in self.objects.iter() {
-            if let Some(tmp) = object.hit(r , t_min , closest_so_far){
+            if let Some(tmp) = object.hit(r, t_min, closest_so_far) {
                 rec_mid = Some(tmp.clone());
                 closest_so_far = tmp.t;
             }
@@ -257,8 +262,10 @@ impl Hittable for HittableList {
                 output_box.maximum = temp_box.maximum;
                 output_box.minimum = temp_box.minimum;
             } else {
-                output_box.minimum = MovingSphere::<Lambertian>::surrounding_box(*output_box, temp_box).minimum;
-                output_box.maximum = MovingSphere::<Lambertian>::surrounding_box(*output_box, temp_box).maximum;
+                output_box.minimum =
+                    MovingSphere::<Lambertian>::surrounding_box(*output_box, temp_box).minimum;
+                output_box.maximum =
+                    MovingSphere::<Lambertian>::surrounding_box(*output_box, temp_box).maximum;
             }
             first_box = false;
         }
@@ -276,23 +283,20 @@ impl Hittable for HittableList {
     fn random(&self, o: Vec3) -> Vec3 {
         let int_size = self.objects.len() as i32;
         if int_size == 0 {
-            return Vec3::new(0.0,0.0,0.0);
+            return Vec3::new(0.0, 0.0, 0.0);
         }
-        let ran = random_int(0 , int_size - 1) as usize;
+        let ran = random_int(0, int_size - 1) as usize;
         let mut vv = (*self.objects[ran]).random(o);
-        if vv.x != vv.x {
-            vv.x = 1.0;
-        }
         return vv;
     }
 }
 
-pub struct Translate<T:Hittable> {
+pub struct Translate<T: Hittable> {
     pub ptr: T,
     pub offset: Vec3,
 }
 
-impl<T:Hittable> Translate<T> {
+impl<T: Hittable> Translate<T> {
     pub fn new(p: T, displacement: Vec3) -> Self {
         Self {
             ptr: p,
@@ -301,7 +305,7 @@ impl<T:Hittable> Translate<T> {
     }
 }
 
-impl<T:Hittable> Hittable for Translate<T> {
+impl<T: Hittable> Hittable for Translate<T> {
     fn hit(&self, r: Ray, t_min: f64, t_max: f64) -> Option<HitRecord> {
         // let moved_r: Ray = Ray {
         //     orig: r.orig - self.offset,
@@ -315,15 +319,15 @@ impl<T:Hittable> Hittable for Translate<T> {
         // rec.set_face_normal(moved_r.clone(), rec.normal);
         //
         // return true;
-        let moved_r = Ray::new(r.orig.sub(self.offset.clone()) , r.dir.clone() , r.time);
-        match self.ptr.hit(moved_r , t_min , t_max) {
+        let moved_r = Ray::new(r.orig.sub(self.offset.clone()), r.dir.clone(), r.time);
+        match self.ptr.hit(moved_r, t_min, t_max) {
             Some(rec) => {
-                let front_face = (Vec3::dot(r.dir , rec.normal) < 0.0);
+                let front_face = (Vec3::dot(r.dir, rec.normal) < 0.0);
                 let mut flag = 1.0;
                 if !front_face {
                     flag = -1.0;
                 }
-                Some(HitRecord{
+                Some(HitRecord {
                     p: rec.p.add(self.offset.clone()),
                     normal: rec.normal.mul(flag),
                     front_face,
@@ -346,13 +350,13 @@ impl<T:Hittable> Hittable for Translate<T> {
         return true;
     }
     fn pdf_value(&self, o: Vec3, v: Vec3) -> f64 {
-        self.ptr.pdf_value(o - self.offset , v)
+        self.ptr.pdf_value(o - self.offset, v)
     }
     fn random(&self, o: Vec3) -> Vec3 {
         self.ptr.random(o - self.offset)
     }
 }
-pub struct RotateY<T:Hittable> {
+pub struct RotateY<T: Hittable> {
     pub ptr: T,
     pub sin_theta: f64,
     pub cos_theta: f64,
@@ -360,7 +364,7 @@ pub struct RotateY<T:Hittable> {
     pub bbox: Aabb,
 }
 
-impl<T:Hittable> RotateY<T> {
+impl<T: Hittable> RotateY<T> {
     pub fn new(p: T, angle: f64) -> Self {
         let radians = degrees_to_radians(angle);
         let sin_theta = radians.sin();
@@ -416,15 +420,15 @@ impl<T:Hittable> RotateY<T> {
         }
         Self {
             ptr: p,
-            sin_theta: sin_theta,
-            cos_theta: cos_theta,
-            hasbox: hasbox,
+            sin_theta,
+            cos_theta,
+            hasbox,
             bbox: Aabb::new(min, max),
         }
     }
 }
 
-impl<T:Hittable> Hittable for RotateY<T> {
+impl<T: Hittable> Hittable for RotateY<T> {
     fn hit(&self, r: Ray, t_min: f64, t_max: f64) -> Option<HitRecord> {
         let mut origin = r.orig;
         let mut direction = r.dir;
@@ -440,22 +444,22 @@ impl<T:Hittable> Hittable for RotateY<T> {
             dir: direction,
             time: r.time,
         };
-        match self.ptr.hit(rotated_r , t_min , t_max) {
+        match self.ptr.hit(rotated_r, t_min, t_max) {
             Some(rec) => {
                 let mut p = rec.p.clone();
-                let mut normal =  rec.normal.clone();
+                let mut normal = rec.normal.clone();
                 p.x = self.cos_theta * rec.p.x + self.sin_theta * rec.p.z;
-                p.z = - self.sin_theta * rec.p.x + self.cos_theta * rec.p.z;
+                p.z = -self.sin_theta * rec.p.x + self.cos_theta * rec.p.z;
                 normal.x = self.cos_theta * rec.normal.x + self.sin_theta * rec.normal.z;
-                normal.z = - self.sin_theta * rec.normal.x + self.cos_theta * rec.normal.z;
-                let front_face = Vec3::dot(rotated_r.dir , normal.clone()) < 0.0;
+                normal.z = -self.sin_theta * rec.normal.x + self.cos_theta * rec.normal.z;
+                let front_face = Vec3::dot(rotated_r.dir, normal.clone()) < 0.0;
                 let mut flag = -1.0;
                 if front_face {
                     flag = 1.0;
                 }
-                Some(HitRecord{
+                Some(HitRecord {
                     p,
-                    normal:normal.mul(flag),
+                    normal: normal.mul(flag),
                     front_face,
                     ..rec
                 })
@@ -479,7 +483,6 @@ impl<T:Hittable> Hittable for RotateY<T> {
         // rec.set_face_normal(rotated_r, normal);
         //
         // return true;
-
     }
 
     fn bounding_box(&self, time0: f64, time1: f64, output_box: &mut Aabb) -> bool {
@@ -488,24 +491,24 @@ impl<T:Hittable> Hittable for RotateY<T> {
     }
 }
 
-pub struct FlipFace<T:Hittable> {
+pub struct FlipFace<T: Hittable> {
     pub ptr: T,
 }
 
-impl<T:Hittable> FlipFace<T> {
+impl<T: Hittable> FlipFace<T> {
     pub fn new(p: T) -> Self {
         Self { ptr: p }
     }
 }
 
-impl<T:Hittable> Hittable for FlipFace<T> {
+impl<T: Hittable> Hittable for FlipFace<T> {
     fn hit(&self, r: Ray, t_min: f64, t_max: f64) -> Option<HitRecord> {
         // if !self.ptr.hit(r, t_min, t_max) {
         //     return None;
         // };
         // rec.front_face = !rec.front_face;
         // return true;
-        match self.ptr.hit(r , t_min , t_max) {
+        match self.ptr.hit(r, t_min, t_max) {
             Some(mut rec) => {
                 rec.front_face = !rec.front_face;
                 Some(rec)

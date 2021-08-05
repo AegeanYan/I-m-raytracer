@@ -16,11 +16,7 @@ pub struct Ray {
 }
 impl Ray {
     pub fn new(orig: Vec3, dir: Vec3, time: f64) -> Self {
-        Self {
-            orig: orig,
-            dir: dir,
-            time: time,
-        }
+        Self { orig, dir, time }
     }
 }
 impl Ray {
@@ -38,18 +34,18 @@ impl Vec3 {
             _ => 0.0,
         };
     }
-    pub fn same_side(a:Vec3 , b:Vec3 , c:Vec3 , p:Vec3) -> bool{
+    pub fn same_side(a: Vec3, b: Vec3, c: Vec3, p: Vec3) -> bool {
         let ab = b - a;
         let ac = c - a;
         let ap = p - a;
 
-        let v1 = Vec3::cross(ab , ac);
-        let v2 = Vec3::cross(ab , ap);
-        Vec3::dot(v1 , v2) >= 0.0
+        let v1 = Vec3::cross(ab, ac);
+        let v2 = Vec3::cross(ab, ap);
+        Vec3::dot(v1, v2) >= 0.0
     }
     pub fn near_zero(&self) -> bool {
         let s: f64 = 1e-8;
-        return (self.x < s && self.y < s && self.z < s);
+        return self.x < s && self.y < s && self.z < s;
     }
     pub fn new(x: f64, y: f64, z: f64) -> Self {
         Self { x, y, z }
@@ -267,7 +263,7 @@ impl Vec3 {
     pub fn unit_vector(v: Vec3) -> Vec3 {
         let divs = Vec3::length(&v);
         if divs == 0.0 {
-            return Vec3::new(0.0,0.0,0.0);
+            return Vec3::new(0.0, 0.0, 0.0);
         }
         return v / divs;
     }
@@ -306,6 +302,7 @@ impl Vec3 {
         );
     }
     pub fn random_in_unit_sphere() -> Vec3 {
+        #[warn(while_true)]
         while true {
             let p: Vec3 = Vec3::random_limit(-1.0, 1.0);
             if p.length_squared() >= 1.0 {
@@ -343,6 +340,7 @@ impl Vec3 {
     }
 
     pub fn random_in_unit_disk() -> Vec3 {
+        #[warn(while_true)]
         while true {
             let p: Vec3 = Vec3::new(
                 random_double_lim(-1.0, 1.0),

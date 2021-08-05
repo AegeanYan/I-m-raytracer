@@ -4,7 +4,7 @@ use crate::{random_double, Vec3};
 use std::f64::consts::PI;
 use std::sync::Arc;
 
-pub trait Pdf:Sync + Send {
+pub trait Pdf: Sync + Send {
     fn value(&self, direction: &mut Vec3) -> f64;
     fn generate(&self) -> Vec3;
 }
@@ -54,18 +54,18 @@ impl Pdf for CosinePdf {
     }
 }
 
-pub struct HittablePdf<'a , T:Hittable> {
+pub struct HittablePdf<'a, T: Hittable> {
     pub o: Vec3,
     pub ptr: &'a T,
 }
 
-impl<'a , T:Hittable> HittablePdf<'a , T> {
+impl<'a, T: Hittable> HittablePdf<'a, T> {
     pub fn new(p: &'a T, origin: Vec3) -> Self {
         Self { ptr: p, o: origin }
     }
 }
 
-impl<'a , T:Hittable> Pdf for HittablePdf<'a , T> {
+impl<'a, T: Hittable> Pdf for HittablePdf<'a, T> {
     fn value(&self, direction: &mut Vec3) -> f64 {
         return self.ptr.pdf_value(self.o, *direction);
     }
@@ -75,35 +75,29 @@ impl<'a , T:Hittable> Pdf for HittablePdf<'a , T> {
     }
 }
 
-pub struct MixturePdf<'a , T1:Pdf , T2:Pdf> {
+pub struct MixturePdf<'a, T1: Pdf, T2: Pdf> {
     //pub p: [Arc<dyn Pdf>; 2],
-    pub p1:&'a T1,
-    pub p2:&'a T2,
+    pub p1: &'a T1,
+    pub p2: &'a T2,
 }
 
-impl<'a , T1:Pdf , T2:Pdf> MixturePdf<'a , T1 , T2> {
-    pub fn new(p1:&'a T1, p2: &'a T2) -> Self {
-        Self { p1 , p2}
+impl<'a, T1: Pdf, T2: Pdf> MixturePdf<'a, T1, T2> {
+    pub fn new(p1: &'a T1, p2: &'a T2) -> Self {
+        Self { p1, p2 }
     }
 }
 
-impl<'a , T1:Pdf , T2:Pdf> Pdf for MixturePdf<'a , T1 , T2> {
+impl<'a, T1: Pdf, T2: Pdf> Pdf for MixturePdf<'a, T1, T2> {
     fn value(&self, direction: &mut Vec3) -> f64 {
         self.p1.value(direction) * 0.5 + self.p2.value(direction) * 0.5
     }
 
     fn generate(&self) -> Vec3 {
-        let mut vv:Vec3;
+        let mut vv: Vec3;
         if random_double() < 0.5 {
             vv = self.p1.generate();
-            if vv.x != vv.x {
-                vv.x = 1.0;
-            }
         } else {
             vv = self.p2.generate();
-            if vv.x != vv.x {
-                vv.x = 1.0;
-            }
         }
         return vv;
     }

@@ -15,33 +15,34 @@ mod texture;
 #[allow(clippy::float_cmp)]
 mod vec3;
 
-use crate::aarect::{XyRect, XzRect, YzRect , Triangle};
+use crate::aarect::{Triangle, XyRect, XzRect, YzRect};
 use crate::camera::Camera;
 use crate::constant_medium::ConstantMedium;
 use crate::hit::{FlipFace, HitRecord, Hittable, HittableList, RotateY, Sphere, Translate};
-use crate::material::{Dielectric, DiffuseLight, Lambertian, Material, Metal, NoMaterial, ScatterRecord, LambertianStatic};
+use crate::material::{
+    Dielectric, DiffuseLight, Lambertian, LambertianStatic, Material, Metal, NoMaterial,
+    ScatterRecord,
+};
 use crate::moving_sphere::MovingSphere;
-use crate::pdf::{CosinePdf, HittablePdf, MixturePdf, NoPdf, Pdf};
+use crate::pdf::{CosinePdf, HittablePdf, MixturePdf, Pdf};
 use crate::texture::{CheckerTexture, ImageTexture, NoiseTexture, SolidColor};
 use crate::Boxe::Boxes;
-use crate::AABB::Aabb;
 use crate::BVH::BvhNode;
 use image::{ImageBuffer, RgbImage};
-use imageproc::distance_transform::Norm::L1;
 use indicatif::ProgressBar;
 pub use rtweekend::*;
 use std::f64::INFINITY;
+pub use std::sync::mpsc::channel;
 use std::sync::Arc;
+pub use threadpool::ThreadPool;
 pub use vec3::Ray;
 pub use vec3::Vec3;
-pub use std::sync::mpsc::channel;
-pub use threadpool::ThreadPool;
 
-struct World{
-    pub height:u32,
+struct World {
+    pub height: u32,
 }
-impl World{
-    pub fn color(&self , _:u32 , y:u32)->u8{
+impl World {
+    pub fn color(&self, _: u32, y: u32) -> u8 {
         (y * 256 / self.height) as u8
     }
 }
@@ -71,7 +72,7 @@ impl World{
 //     img.save("output/test.png").unwrap();
 //     bar.finish();
 // }
-
+#[allow(clippy::many_single_char_names)]
 fn main() {
     //Image
     // let mut aspect_ratio: f64 = 16.0 / 9.0;
@@ -352,8 +353,8 @@ fn main() {
     // img.save("output/test.png").unwrap();
     // bar.finish();
 
-    let (tx , rx) = channel();
-    let n_jobs:usize = 32;
+    let (tx, rx) = channel();
+    let n_jobs: usize = 32;
     let n_workers = 8;
     let pool = ThreadPool::new(n_workers);
     let bar = ProgressBar::new((n_jobs + 1) as u64);
@@ -365,35 +366,37 @@ fn main() {
         let world_ptr = world_in_thread.clone();
         let bars = bar.clone();
         pool.execute(move || {
-            let row_begin =  image_height as usize * i / n_jobs;
+            let row_begin = image_height as usize * i / n_jobs;
             let row_end = image_height as usize * (i + 1) / n_jobs;
             let render_height = row_end - row_begin;
-            let mut img:RgbImage = ImageBuffer::new(image_width , render_height as u32);
-            for x in 0..image_width{
-                for (img_y , y) in (row_begin..row_end).enumerate() {
+            let mut img: RgbImage = ImageBuffer::new(image_width, render_height as u32);
+            for x in 0..image_width {
+                for (img_y, y) in (row_begin..row_end).enumerate() {
                     let y = y as u32;
-                    let pixel = img.get_pixel_mut(x , img_y as u32);
-                    let mut pixel_color = Vec3::new(0.0,0.0,0.0);
+                    let pixel = img.get_pixel_mut(x, img_y as u32);
+                    let mut pixel_color = Vec3::new(0.0, 0.0, 0.0);
                     for _ in 0..samples_per_pixel {
                         let u = (x as f64 + random_double()) / (image_width - 1) as f64;
-                        let v = (image_height as f64 - y as f64 + random_double()) / (image_height - 1) as f64;
-                        let r = cam.get_ray(u , v);
-                        pixel_color += ray_color(r , background , &*world_ptr , &light_ptr , max_depth);
+                        let v = (image_height as f64 - y as f64 + random_double())
+                            / (image_height - 1) as f64;
+                        let r = cam.get_ray(u, v);
+                        pixel_color += ray_color(r, background, &*world_ptr, &light_ptr, max_depth);
                     }
                     *pixel = write_color(&pixel_color, samples_per_pixel);
+                }
             }
-            }
-            tx.send((row_begin..row_end , img)).expect("failed to send result");
+            tx.send((row_begin..row_end, img))
+                .expect("failed to send result");
             bars.inc(1);
         });
     }
-    let mut img:RgbImage = ImageBuffer::new(image_width , image_height);
-    for (rows , data) in rx.iter().take(n_jobs) {
-        for (idx , row) in rows.enumerate() {
+    let mut img: RgbImage = ImageBuffer::new(image_width, image_height);
+    for (rows, data) in rx.iter().take(n_jobs) {
+        for (idx, row) in rows.enumerate() {
             for col in 0..image_width {
                 let row = row as u32;
                 let idx = idx as u32;
-                *img.get_pixel_mut(col , row) = *data.get_pixel(col , idx);
+                *img.get_pixel_mut(col, row) = *data.get_pixel(col, idx);
             }
         }
     }
@@ -406,16 +409,6 @@ fn write_color(pixel_color: &Vec3, samples_per_pixel: u32) -> image::Rgb<u8> {
     let mut b: f64 = pixel_color.z;
 
     let scale: f64 = 1.0 / (samples_per_pixel as f64);
-
-    if r != r {
-        r = 0.0;
-    }
-    if g != g {
-        g = 0.0;
-    }
-    if b != b {
-        b = 0.0;
-    }
 
     r = (r * scale).sqrt();
     g = (g * scale).sqrt();
@@ -466,6 +459,7 @@ fn ray_color(
     lights: &HittableList,
     depth: u32,
 ) -> Vec3 {
+    #[warn(unused_assignments)]
     let mut rec = HitRecord {
         p: Vec3 {
             x: 0.0,
@@ -483,10 +477,11 @@ fn ray_color(
         v: 0.0,
         front_face: true,
     };
-    if depth <= 0 {
+    #[deny(clippy::absurd_extreme_comparisons)]
+    if depth == 0 {
         return Vec3::new(0.0, 0.0, 0.0);
     }
-    match world.hit(r, 0.001 , INFINITY) {
+    match world.hit(r, 0.001, INFINITY) {
         Some(rec_) => {
             rec = rec_;
         }
@@ -544,13 +539,7 @@ fn ray_color(
     };
     if srec.is_specular {
         return srec.attenuation
-            * ray_color(
-                srec.specular_ray,
-                background,
-                world,
-                lights,
-                depth - 1,
-            );
+            * ray_color(srec.specular_ray, background, world, lights, depth - 1);
     }
     // let on_light = Vec3::new(random_double_lim(213.0 , 343.0) , 554.0 , random_double_lim(227.0,332.0));
     // let mut to_light = on_light - rec.p;
@@ -583,15 +572,10 @@ fn ray_color(
     //let mut light_pdf:HittablePdf = HittablePdf::new(lights.clone() , rec.p);
 
     //let p: MixturePdf = MixturePdf::new(light_ptr, srec.pdf_ptr);
-    let p = MixturePdf::new(&light_ptr , &srec.pdf_ptr);
+    let p = MixturePdf::new(&light_ptr, &srec.pdf_ptr);
     scattered.orig = rec.p;
     scattered.dir = p.generate();
     scattered.time = r.time;
-
-    if scattered.dir.x != scattered.dir.x {
-        scattered.dir.x = 1.0;
-
-    }
 
     //return emitted + albedo * ray_color(scattered , background , world , depth - 1);
 
@@ -614,9 +598,7 @@ fn ray_color(
         .scattering_pdf(&mut r, &mut rec.clone(), &mut scattered);
 
     let ans = emitted
-        + ray_color(scattered, background, world, &lights, depth - 1)
-            * srec.attenuation
-            * recs
+        + ray_color(scattered, background, world, &lights, depth - 1) * srec.attenuation * recs
             / pdf_val;
     return ans;
     //return Vec3::new(0.0, 0.0, 0.0);
@@ -639,10 +621,7 @@ fn random_scene() -> HittableList {
     //     mat_ptr: ground_material,
     // };
     // world.add(Arc::new(gd));
-    let checker = CheckerTexture::new(
-        Vec3::new(0.2, 0.3, 0.1),
-        Vec3::new(0.9, 0.9, 0.9),
-    );
+    let checker = CheckerTexture::new(Vec3::new(0.2, 0.3, 0.1), Vec3::new(0.9, 0.9, 0.9));
     let gd: Sphere<LambertianStatic<CheckerTexture>> = Sphere {
         center: Vec3::new(0.0, -1000.0, 0.0),
         radius: 1000.0,
@@ -664,7 +643,7 @@ fn random_scene() -> HittableList {
                         * Vec3::new(random_double(), random_double(), random_double());
                     let sphere_material = LambertianStatic::<SolidColor>::new(albedo);
                     let center2: Vec3 = center + Vec3::new(0.0, random_double_lim(0.0, 0.5), 0.0);
-                    let ms:MovingSphere<LambertianStatic<SolidColor>> = MovingSphere {
+                    let ms: MovingSphere<LambertianStatic<SolidColor>> = MovingSphere {
                         center0: center,
                         center1: center2,
                         time0: 0.0,
@@ -682,7 +661,7 @@ fn random_scene() -> HittableList {
                     let fuzz: f64 = random_double_lim(0.0, 0.5);
                     let sphere_material = Metal::news(albedo, fuzz);
                     let met: Sphere<Metal> = Sphere {
-                        center: center,
+                        center,
                         radius: 0.2,
                         mat_ptr: sphere_material,
                     };
@@ -690,7 +669,7 @@ fn random_scene() -> HittableList {
                 } else {
                     let sphere_material = Dielectric::new(1.5);
                     let gla: Sphere<Dielectric> = Sphere {
-                        center: center,
+                        center,
                         radius: 0.2,
                         mat_ptr: sphere_material,
                     };
@@ -736,7 +715,7 @@ fn random_scene() -> HittableList {
         time0: 0.0,
         radius: 1.0,
         mat_ptr: material3,
-        time1: 1.0
+        time1: 1.0,
     };
     world.add(Arc::new(mat3));
     return world;
@@ -745,10 +724,7 @@ fn random_scene() -> HittableList {
 pub fn two_spheres() -> HittableList {
     let mut objects: HittableList = HittableList { objects: vec![] };
 
-    let checker = CheckerTexture::new(
-        Vec3::new(0.2, 0.3, 0.1),
-        Vec3::new(0.9, 0.9, 0.9),
-    );
+    let checker = CheckerTexture::new(Vec3::new(0.2, 0.3, 0.1), Vec3::new(0.9, 0.9, 0.9));
     let sph1: Sphere<LambertianStatic<CheckerTexture>> = Sphere {
         center: Vec3::new(0.0, -10.0, 0.0),
         radius: 10.0,
@@ -792,7 +768,7 @@ pub fn earth() -> HittableList {
     let mut objects: HittableList = HittableList { objects: vec![] };
     let earth_texture = texture::ImageTexture::new("input/earthmap.jpg");
     //let earth_surface = Arc::new(Lambertian::news(earth_texture));
-    let sph:Sphere<LambertianStatic<ImageTexture>> = Sphere {
+    let sph: Sphere<LambertianStatic<ImageTexture>> = Sphere {
         center: Vec3::new(0.0, 0.0, 0.0),
         radius: 2.0,
         mat_ptr: LambertianStatic::news(earth_texture),
@@ -804,12 +780,12 @@ pub fn simple_light() -> HittableList {
     let mut objects: HittableList = HittableList { objects: vec![] };
 
     let pertext = NoiseTexture::new0(4.0);
-    let sph1:Sphere<LambertianStatic<NoiseTexture>> = Sphere {
+    let sph1: Sphere<LambertianStatic<NoiseTexture>> = Sphere {
         center: Vec3::new(0.0, -1000.0, 0.0),
         radius: 1000.0,
         mat_ptr: LambertianStatic::news(pertext.clone()),
     };
-    let sph2:Sphere<LambertianStatic<NoiseTexture>> = Sphere {
+    let sph2: Sphere<LambertianStatic<NoiseTexture>> = Sphere {
         center: Vec3::new(0.0, 2.0, 0.0),
         radius: 2.0,
         mat_ptr: LambertianStatic::news(pertext.clone()),
@@ -829,32 +805,16 @@ pub fn cornell_box() -> HittableList {
     let white = Lambertian::new(Vec3::new(0.73, 0.73, 0.73));
     let green = Lambertian::new(Vec3::new(0.12, 0.45, 0.15));
     let light = DiffuseLight::new0(Vec3::new(15.0, 15.0, 15.0));
-    let allin = Translate::new(get_obj("input/bunny.fine.obj" , 1000.0) , Vec3::new(260.0 , 50.0, 290.0));
+    let allin = Translate::new(
+        get_obj("input/bunny.fine.obj", 1000.0),
+        Vec3::new(260.0, 50.0, 290.0),
+    );
     // let allin = RotateY::new(allin , 90.0);
     objects.add(Arc::new(allin));
-    objects.add(Arc::new(YzRect::new(
-        0.0,
-        555.0,
-        0.0,
-        555.0,
-        555.0,
-        green,
-    )));
-    objects.add(Arc::new(YzRect::new(
-        0.0,
-        555.0,
-        0.0,
-        555.0,
-        0.0,
-        red,
-    )));
+    objects.add(Arc::new(YzRect::new(0.0, 555.0, 0.0, 555.0, 555.0, green)));
+    objects.add(Arc::new(YzRect::new(0.0, 555.0, 0.0, 555.0, 0.0, red)));
     objects.add(Arc::new(FlipFace::new(XzRect::new(
-        213.0,
-        343.0,
-        227.0,
-        332.0,
-        554.0,
-        light,
+        213.0, 343.0, 227.0, 332.0, 554.0, light,
     ))));
     objects.add(Arc::new(XzRect::new(
         0.0,
@@ -993,7 +953,6 @@ pub fn cornell_smoke() -> HittableList {
 pub fn final_scene() -> HittableList {
     let mut boxes1: HittableList = HittableList { objects: vec![] };
 
-
     let boxes_per_side: i32 = 20;
     for i in 0..boxes_per_side {
         for j in 0..boxes_per_side {
@@ -1008,7 +967,7 @@ pub fn final_scene() -> HittableList {
             boxes1.add(Arc::new(Boxes::new(
                 Vec3::new(x0, y0, z0),
                 Vec3::new(x1, y1, z1),
-                LambertianStatic::<SolidColor>::new(Vec3::new(0.48, 0.83, 0.53))
+                LambertianStatic::<SolidColor>::new(Vec3::new(0.48, 0.83, 0.53)),
             )));
         }
     }
@@ -1079,9 +1038,7 @@ pub fn final_scene() -> HittableList {
         Vec3::new(1.0, 1.0, 1.0),
     )));
 
-    let emat = Lambertian::news(Arc::new(ImageTexture::new(
-        "earthmap.jpg",
-    )));
+    let emat = Lambertian::news(Arc::new(ImageTexture::new("earthmap.jpg")));
     objects.add(Arc::new(Sphere::new(
         Vec3::new(400.0, 200.0, 400.0),
         100.0,
@@ -1097,6 +1054,7 @@ pub fn final_scene() -> HittableList {
     let mut boxes2: HittableList = HittableList { objects: vec![] };
     let white = LambertianStatic::<SolidColor>::new(Vec3::new(0.73, 0.73, 0.73));
     let ns: i32 = 1000;
+    #[warn(unused_variables)]
     for j in 0..ns {
         boxes2.add(Arc::new(Sphere::new(
             Vec3::new(
@@ -1118,7 +1076,6 @@ pub fn final_scene() -> HittableList {
 }
 pub fn get_obj(filename: &str, rate: f64) -> HittableList {
     let mut objects = HittableList { objects: vec![] };
-    let green = (LambertianStatic::<SolidColor>::new(Vec3::new(0.12, 0.45, 0.15)));
     let cornell_box = tobj::load_obj(
         filename,
         &tobj::LoadOptions {
@@ -1129,7 +1086,6 @@ pub fn get_obj(filename: &str, rate: f64) -> HittableList {
     );
     assert!(cornell_box.is_ok());
     let (models, _materials) = cornell_box.expect("Failed to load OBJ file");
-    let mut boxes1 = HittableList { objects: vec![] };
     for (_i, m) in models.iter().enumerate() {
         let mut boxes2 = HittableList { objects: vec![] };
         let mesh = &m.mesh;
@@ -1153,7 +1109,7 @@ pub fn get_obj(filename: &str, rate: f64) -> HittableList {
                     y: rate * mesh.positions[(3 * x3 + 1) as usize] as f64,
                     z: rate * mesh.positions[(3 * x3 + 2) as usize] as f64,
                 },
-                (Metal::news(Vec3::new(0.99, 0.78, 0.0), 0.1)),
+                Metal::news(Vec3::new(0.99, 0.78, 0.0), 0.1),
             );
             boxes2.add(Arc::new(triange));
         }

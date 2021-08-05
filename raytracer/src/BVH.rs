@@ -1,5 +1,6 @@
 use crate::hit;
 use crate::hit::{HitRecord, Hittable, HittableList};
+use crate::material::Lambertian;
 use crate::moving_sphere::MovingSphere;
 use crate::Vec3;
 use crate::AABB::Aabb;
@@ -8,7 +9,6 @@ use std::cmp::Ordering;
 use std::mem::swap;
 use std::sync::Arc;
 use std::vec;
-use crate::material::Lambertian;
 
 pub struct BvhNode {
     pub left: Arc<dyn Hittable>,
@@ -27,14 +27,14 @@ impl Hittable for BvhNode {
         if !self.box0.hit(r, t_min, t_max) {
             return None;
         }
-        if let Some(rec_tmp) = self.left.hit(r, t_min , t_max){
-            if let Some(rec_) = self.right.hit(r , t_min , rec_tmp.t){
+        if let Some(rec_tmp) = self.left.hit(r, t_min, t_max) {
+            if let Some(rec_) = self.right.hit(r, t_min, rec_tmp.t) {
                 return Some(rec_);
-            }else {
+            } else {
                 return Some(rec_tmp);
             }
         }
-        if let Some(rec_tmp) = self.right.hit(r , t_min , t_max){
+        if let Some(rec_tmp) = self.right.hit(r, t_min, t_max) {
             return Some(rec_tmp);
         }
         None

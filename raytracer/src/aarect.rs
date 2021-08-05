@@ -5,10 +5,10 @@ use crate::AABB::Aabb;
 use crate::{random_double_lim, Hittable};
 use crate::{rtweekend::*, Ray};
 use std::f64::INFINITY;
-use std::sync::Arc;
 use std::ops::Mul;
+use std::sync::Arc;
 
-pub struct XyRect<T:Material + Clone> {
+pub struct XyRect<T: Material + Clone> {
     pub mp: T,
     pub x0: f64,
     pub x1: f64,
@@ -17,7 +17,7 @@ pub struct XyRect<T:Material + Clone> {
     pub k: f64,
 }
 
-impl<T:Material + Clone> XyRect<T> {
+impl<T: Material + Clone> XyRect<T> {
     pub fn new(x0: f64, x1: f64, y0: f64, y1: f64, k: f64, mat: T) -> Self {
         Self {
             mp: mat,
@@ -29,7 +29,8 @@ impl<T:Material + Clone> XyRect<T> {
         }
     }
 }
-impl<T:Material + Clone> Hittable for XyRect<T> {
+impl<T: Material + Clone> Hittable for XyRect<T> {
+    #[warn(clippy::many_single_char_names)]
     fn hit(&self, r: Ray, t_min: f64, t_max: f64) -> Option<HitRecord> {
         let t = (self.k - r.orig.z) / r.dir.z;
         if t < t_min || t > t_max {
@@ -44,19 +45,19 @@ impl<T:Material + Clone> Hittable for XyRect<T> {
         let v = (y - self.y0) / (self.y1 - self.y0);
         let outward_normal = Vec3::new(0.0, 0.0, 1.0);
         let p = r.at(t);
-        let front_face = Vec3::dot(r.dir , outward_normal.clone()) < 0.0;
+        let front_face = Vec3::dot(r.dir, outward_normal.clone()) < 0.0;
         let mut flag = -1.0;
         if front_face {
             flag = 1.0;
         }
-        Some(HitRecord{
+        Some(HitRecord {
             p,
             normal: outward_normal.mul(flag),
             mat_ptr: &self.mp,
             t,
             u,
             v,
-            front_face
+            front_face,
         })
     }
 
@@ -69,7 +70,7 @@ impl<T:Material + Clone> Hittable for XyRect<T> {
     }
 }
 
-pub struct XzRect<T:Material + Clone> {
+pub struct XzRect<T: Material + Clone> {
     pub mp: T,
     pub x0: f64,
     pub x1: f64,
@@ -78,7 +79,7 @@ pub struct XzRect<T:Material + Clone> {
     pub k: f64,
 }
 
-impl<T:Material + Clone> XzRect<T> {
+impl<T: Material + Clone> XzRect<T> {
     pub fn new(x0: f64, x1: f64, z0: f64, z1: f64, k: f64, mat: T) -> Self {
         Self {
             mp: mat,
@@ -90,7 +91,8 @@ impl<T:Material + Clone> XzRect<T> {
         }
     }
 }
-impl<T:Material + Clone> Hittable for XzRect<T> {
+impl<T: Material + Clone> Hittable for XzRect<T> {
+    #[warn(clippy::many_single_char_names)]
     fn hit(&self, r: Ray, t_min: f64, t_max: f64) -> Option<HitRecord> {
         let t = (self.k - r.orig.y) / r.dir.y;
         if t < t_min || t > t_max {
@@ -105,19 +107,19 @@ impl<T:Material + Clone> Hittable for XzRect<T> {
         let v = (z - self.z0) / (self.z1 - self.z0);
         let outward_normal = Vec3::new(0.0, 1.0, 0.0);
         let p = r.at(t);
-        let front_face = Vec3::dot(r.dir , outward_normal) < 0.0;
+        let front_face = Vec3::dot(r.dir, outward_normal) < 0.0;
         let mut flag = -1.0;
         if front_face {
             flag = 1.0;
         }
-        Some(HitRecord{
+        Some(HitRecord {
             p,
             normal: outward_normal.mul(flag),
             mat_ptr: &self.mp,
             t,
             u,
             v,
-            front_face
+            front_face,
         })
     }
 
@@ -170,7 +172,7 @@ impl<T:Material + Clone> Hittable for XzRect<T> {
         return random_point - origin;
     }
 }
-pub struct YzRect<T:Material + Clone> {
+pub struct YzRect<T: Material + Clone> {
     pub mp: T,
     pub y0: f64,
     pub y1: f64,
@@ -179,7 +181,7 @@ pub struct YzRect<T:Material + Clone> {
     pub k: f64,
 }
 
-impl<T:Material + Clone> YzRect<T> {
+impl<T: Material + Clone> YzRect<T> {
     pub fn new(y0: f64, y1: f64, z0: f64, z1: f64, k: f64, mat: T) -> Self {
         Self {
             mp: mat,
@@ -191,7 +193,8 @@ impl<T:Material + Clone> YzRect<T> {
         }
     }
 }
-impl<T:Material + Clone> Hittable for YzRect<T> {
+impl<T: Material + Clone> Hittable for YzRect<T> {
+    #[warn(clippy::many_single_char_names)]
     fn hit(&self, r: Ray, t_min: f64, t_max: f64) -> Option<HitRecord> {
         let t = (self.k - r.orig.x) / r.dir.x;
         if t < t_min || t > t_max {
@@ -206,19 +209,19 @@ impl<T:Material + Clone> Hittable for YzRect<T> {
         let v = (z - self.z0) / (self.z1 - self.z0);
         let p = r.at(t);
         let outward_normal = Vec3::new(1.0, 0.0, 0.0);
-        let front_face = Vec3::dot(r.dir , outward_normal.clone()) < 0.0;
+        let front_face = Vec3::dot(r.dir, outward_normal.clone()) < 0.0;
         let mut flag = -1.0;
         if front_face {
             flag = 1.0;
         }
-        Some(HitRecord{
+        Some(HitRecord {
             p,
             normal: outward_normal.mul(flag),
             mat_ptr: &self.mp,
             t,
             u,
             v,
-            front_face
+            front_face,
         })
     }
 
@@ -231,15 +234,15 @@ impl<T:Material + Clone> Hittable for YzRect<T> {
     }
 }
 #[derive(Copy, Clone)]
-pub struct Triangle<T:Material>{
-    pub p0:Vec3,
-    pub p1:Vec3,
-    pub p2:Vec3,
-    pub mat_ptr:T,
+pub struct Triangle<T: Material> {
+    pub p0: Vec3,
+    pub p1: Vec3,
+    pub p2: Vec3,
+    pub mat_ptr: T,
 }
-impl <T:Material> Triangle<T>{
-    pub fn new(p0:Vec3 , p1:Vec3 , p2:Vec3 , mat_ptr:T) ->Self{
-        Self{
+impl<T: Material> Triangle<T> {
+    pub fn new(p0: Vec3, p1: Vec3, p2: Vec3, mat_ptr: T) -> Self {
+        Self {
             p0,
             p1,
             p2,
@@ -247,21 +250,23 @@ impl <T:Material> Triangle<T>{
         }
     }
 }
-impl <T:Material> Hittable for Triangle<T>{
+impl<T: Material> Hittable for Triangle<T> {
     fn hit(&self, r: Ray, t_min: f64, t_max: f64) -> Option<HitRecord> {
         let dir1 = self.p1 - self.p0;
         let dir2 = self.p2 - self.p0;
-        let normal = Vec3::unit_vector(Vec3::cross(dir1 , dir2));//法向量
+        let normal = Vec3::unit_vector(Vec3::cross(dir1, dir2)); //法向量
         let tmp = self.p0 - r.orig;
-        let t = Vec3::dot(normal , tmp) / Vec3::dot(normal , r.dir);
+        let t = Vec3::dot(normal, tmp) / Vec3::dot(normal, r.dir);
         if t < t_min || t > t_max {
             return None;
         };
         let r_ = r.at(t);
-        if Vec3::same_side(self.p0 , self.p1 , self.p2 , r_) && Vec3::same_side(self.p1 , self.p2 , self.p0 , r_)
-            && Vec3::same_side(self.p2 , self.p0 , self.p1 , r_){
+        if Vec3::same_side(self.p0, self.p1, self.p2, r_)
+            && Vec3::same_side(self.p1, self.p2, self.p0, r_)
+            && Vec3::same_side(self.p2, self.p0, self.p1, r_)
+        {
             let outward_normal = normal;
-            let front_face = Vec3::dot(outward_normal , r.dir) < 0.0;
+            let front_face = Vec3::dot(outward_normal, r.dir) < 0.0;
             let mut flag = 1.0;
             if !front_face {
                 flag = -1.0;
@@ -273,24 +278,32 @@ impl <T:Material> Hittable for Triangle<T>{
 
             let mut u = 0.0;
             let mut v = 0.0;
-            get_triangle_uv(v_ab , v_bc , v_ap , v_bp , &mut u , &mut v);
-            Some(HitRecord{
+            get_triangle_uv(v_ab, v_bc, v_ap, v_bp, &mut u, &mut v);
+            Some(HitRecord {
                 p: r_,
-                normal:outward_normal * flag,
+                normal: outward_normal * flag,
                 mat_ptr: &(self.mat_ptr),
                 t,
                 u,
                 v,
-                front_face
+                front_face,
             })
-        }else {
+        } else {
             None
         }
     }
 
     fn bounding_box(&self, time0: f64, time1: f64, output_box: &mut Aabb) -> bool {
-        output_box.minimum = Vec3::new(f_3_min(self.p0.x , self.p1.x , self.p2.x),f_3_min(self.p0.y ,  self.p1.y , self.p2.y) , f_3_min(self.p0.z , self.p1.z , self.p2.z)) + Vec3::new(0.01, 0.01 ,0.01);
-        output_box.maximum = Vec3::new(f_3_max(self.p0.x , self.p1.x , self.p2.x),f_3_max(self.p0.y ,  self.p1.y , self.p2.y) , f_3_max(self.p0.z , self.p1.z , self.p2.z)) - Vec3::new(0.01 ,0.01 ,0.01);
+        output_box.minimum = Vec3::new(
+            f_3_min(self.p0.x, self.p1.x, self.p2.x),
+            f_3_min(self.p0.y, self.p1.y, self.p2.y),
+            f_3_min(self.p0.z, self.p1.z, self.p2.z),
+        ) + Vec3::new(0.01, 0.01, 0.01);
+        output_box.maximum = Vec3::new(
+            f_3_max(self.p0.x, self.p1.x, self.p2.x),
+            f_3_max(self.p0.y, self.p1.y, self.p2.y),
+            f_3_max(self.p0.z, self.p1.z, self.p2.z),
+        ) - Vec3::new(0.01, 0.01, 0.01);
         return true;
     }
 }

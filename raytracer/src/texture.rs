@@ -1,14 +1,10 @@
+use crate::clamp;
 use crate::perlin;
 use crate::perlin::Perlin;
 use crate::Vec3;
-use crate::{clamp, rtweekend};
-use image::GenericImageView;
-use imageproc::drawing::Canvas;
-use imageproc::noise;
-use std::path::Path;
 use std::sync::Arc;
 
-pub trait Texture:Send+Sync {
+pub trait Texture: Send + Sync {
     fn value(&self, u: f64, v: f64, p: &mut Vec3) -> Vec3;
 }
 #[derive(Copy, Clone)]
@@ -51,11 +47,11 @@ impl CheckerTexture {
     }
 }
 #[derive(Clone)]
-pub struct CheckerTextureStatic<T1: Texture , T2:Texture>{
-    pub odd:T1,
-    pub even:T2,
+pub struct CheckerTextureStatic<T1: Texture, T2: Texture> {
+    pub odd: T1,
+    pub even: T2,
 }
-impl<T1:Texture , T2:Texture> Texture for CheckerTextureStatic<T1 , T2> {
+impl<T1: Texture, T2: Texture> Texture for CheckerTextureStatic<T1, T2> {
     fn value(&self, u: f64, v: f64, p: &mut Vec3) -> Vec3 {
         let sines: f64 = (10.0 * p.x).sin() * (10.0 * p.y).sin() * (10.0 * p.z).sin();
         if sines < 0.0 {
@@ -98,6 +94,7 @@ pub struct ImageTexture {
 }
 
 impl ImageTexture {
+    #[warn(deprecated)]
     pub fn new(filename: &str) -> Self {
         // let components: i32 = BYTES_PER_PIXEL;
         // let ima= image::open(&Path::new(filename)).unwrap();
@@ -121,6 +118,7 @@ impl ImageTexture {
 }
 
 impl Texture for ImageTexture {
+    #[warn(clippy::many_single_char_names)]
     fn value(&self, mut u: f64, mut v: f64, p: &mut Vec3) -> Vec3 {
         let mut u = clamp(u, 0.0, 1.0);
         let mut v = 1.0 - clamp(v, 0.0, 1.0);

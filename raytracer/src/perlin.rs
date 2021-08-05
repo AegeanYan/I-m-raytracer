@@ -17,6 +17,7 @@ pub struct Perlin {
 }
 
 impl Perlin {
+    #[allow(clippy::needless_range_loop)]
     pub fn permute(p: &mut Vec<i32>, n: i32) {
         for i in n - 1..0 {
             let target: i32 = random_int(0, i as i32);
@@ -25,6 +26,7 @@ impl Perlin {
             p[target as usize] = tmp;
         }
     }
+    #[allow(clippy::needless_range_loop)]
     pub fn perlin_generate_perm() -> Vec<i32> {
         let mut p: Vec<i32> = Vec::with_capacity(POINT_COUNT as usize);
 
@@ -92,6 +94,8 @@ impl Perlin {
     //     return self.ranfloat[(self.perm_x[i] ^ self.perm_y[j] ^ self.perm_z[k]) as usize];
     //     //return self.ranfloat[self.perm_z[k] as usize];
     // }
+    #[allow(clippy::many_single_char_names)]
+    #[allow(clippy::needless_range_loop)]
     pub fn noise(&self, p: &Vec3) -> f64 {
         let mut u = p.x - p.x.floor();
         let mut v = p.y - p.y.floor();
@@ -118,6 +122,7 @@ impl Perlin {
         }
         return Perlin::trilinear_interp(c, u, v, w);
     }
+    #[allow(clippy::needless_range_loop)]
     pub fn trilinear_interp(c: [[[Vec3; 2]; 2]; 2], u: f64, v: f64, w: f64) -> f64 {
         let mut accum: f64 = 0.0;
         let uu = u * u * (3.0 - 2.0 * u);
