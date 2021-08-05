@@ -167,7 +167,7 @@ impl<T: Texture> Material for LambertianStatic<T> {
     fn scatter(
         &self,
         _r_in: &mut Ray,
-        mut rec: &mut HitRecord,
+        rec: &mut HitRecord,
         mut srec: &mut ScatterRecord,
     ) -> bool {
         srec.is_specular = false;

@@ -131,23 +131,24 @@ impl<T: Material + Clone> Hittable for XzRect<T> {
     }
     #[warn(unused_assignments)]
     fn pdf_value(&self, origin: Vec3, v: Vec3) -> f64 {
-        let mut rec: HitRecord = HitRecord {
-            p: Vec3 {
-                x: 0.0,
-                y: 0.0,
-                z: 0.0,
-            },
-            normal: Vec3 {
-                x: 0.0,
-                y: 0.0,
-                z: 0.0,
-            },
-            mat_ptr: &Metal::new(),
-            t: 0.0,
-            u: 0.0,
-            v: 0.0,
-            front_face: false,
-        };
+        // let mut rec: HitRecord = HitRecord {
+        //     p: Vec3 {
+        //         x: 0.0,
+        //         y: 0.0,
+        //         z: 0.0,
+        //     },
+        //     normal: Vec3 {
+        //         x: 0.0,
+        //         y: 0.0,
+        //         z: 0.0,
+        //     },
+        //     mat_ptr: &Metal::new(),
+        //     t: 0.0,
+        //     u: 0.0,
+        //     v: 0.0,
+        //     front_face: false,
+        // };
+        let mut rec:HitRecord;
         match self.hit(Ray::new(origin, v, 0.0), 0.001, INFINITY) {
             Some(rec_) => {
                 rec = rec_;

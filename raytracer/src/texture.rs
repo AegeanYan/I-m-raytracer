@@ -119,7 +119,7 @@ impl ImageTexture {
 
 impl Texture for ImageTexture {
     #[warn(clippy::many_single_char_names)]
-    fn value(&self, us: f64, vs: f64, p: &mut Vec3) -> Vec3 {
+    fn value(&self, us: f64, vs: f64, _p: &mut Vec3) -> Vec3 {
         let ui = clamp(us, 0.0, 1.0);
         let vi = 1.0 - clamp(vs, 0.0, 1.0);
 

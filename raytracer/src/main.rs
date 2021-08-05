@@ -229,7 +229,7 @@ fn main() {
     // let vup = Vec3::new(0.0, 1.0, 0.0);
     // let dist_to_focus = 10.0;
     // let aperture = 0.1;
-    let mut world: HittableList;
+    let world: HittableList;
     let lookfrom: Vec3;
     let lookat: Vec3;
     let mut vfov: f64 = 40.0;
@@ -452,23 +452,24 @@ fn ray_color(
     lights: &HittableList,
     depth: u32,
 ) -> Vec3 {
-    let mut rec = HitRecord {
-        p: Vec3 {
-            x: 0.0,
-            y: 0.0,
-            z: 0.0,
-        },
-        normal: Vec3 {
-            x: 0.0,
-            y: 0.0,
-            z: 0.0,
-        },
-        mat_ptr: &Lambertian::new(Vec3::new(0.0, 0.0, 0.0)),
-        t: 0.0,
-        u: 0.0,
-        v: 0.0,
-        front_face: true,
-    };
+    // let mut rec = HitRecord {
+    //     p: Vec3 {
+    //         x: 0.0,
+    //         y: 0.0,
+    //         z: 0.0,
+    //     },
+    //     normal: Vec3 {
+    //         x: 0.0,
+    //         y: 0.0,
+    //         z: 0.0,
+    //     },
+    //     mat_ptr: &Lambertian::new(Vec3::new(0.0, 0.0, 0.0)),
+    //     t: 0.0,
+    //     u: 0.0,
+    //     v: 0.0,
+    //     front_face: true,
+    // };
+    let mut rec:HitRecord;
     #[deny(clippy::absurd_extreme_comparisons)]
     if depth == 0 {
         return Vec3::new(0.0, 0.0, 0.0);
