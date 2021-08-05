@@ -54,7 +54,7 @@ impl Perlin {
     // }
     pub fn new() -> Self {
         let mut v: Vec<Vec3> = Vec::with_capacity(POINT_COUNT as usize);
-        for i in 0..POINT_COUNT {
+        for _i in 0..POINT_COUNT {
             v.push(Vec3::unit_vector(Vec3::random_limit(-1.0, 1.0)));
         }
         Self {
@@ -96,9 +96,9 @@ impl Perlin {
     #[allow(clippy::many_single_char_names)]
     #[allow(clippy::needless_range_loop)]
     pub fn noise(&self, p: &Vec3) -> f64 {
-        let mut u = p.x - p.x.floor();
-        let mut v = p.y - p.y.floor();
-        let mut w = p.z - p.z.floor();
+        let u = p.x - p.x.floor();
+        let v = p.y - p.y.floor();
+        let w = p.z - p.z.floor();
 
         // u = u * u * (3.0 - 2.0 * u);
         // v = v * v * (3.0 - 2.0 * v);
@@ -146,7 +146,7 @@ impl Perlin {
         let mut accum = 0.0;
         let mut temp_p = p.clone();
         let mut weight = 1.0;
-        for i in 0..depth {
+        for _i in 0..depth {
             accum += weight * Perlin::noise(&self, &temp_p);
             weight *= 0.5;
             temp_p *= 2.0;

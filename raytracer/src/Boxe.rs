@@ -62,12 +62,11 @@ impl<T: Material + Clone> Hittable for Boxes<T> {
         };
         if let Some(rec) = self.sides.5.hit(r, t_min, max) {
             temp = Some(rec.clone());
-            max = rec.t;
         };
         temp
     }
 
-    fn bounding_box(&self, time0: f64, time1: f64, output_box: &mut Aabb) -> bool {
+    fn bounding_box(&self, _time0: f64, _time1: f64, output_box: &mut Aabb) -> bool {
         *output_box = Aabb::new(self.box_min, self.box_max);
         return true;
     }

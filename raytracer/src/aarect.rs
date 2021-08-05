@@ -60,7 +60,7 @@ impl<T: Material + Clone> Hittable for XyRect<T> {
         })
     }
 
-    fn bounding_box(&self, time0: f64, time1: f64, output_box: &mut Aabb) -> bool {
+    fn bounding_box(&self, _time0: f64, _time1: f64, output_box: &mut Aabb) -> bool {
         *output_box = Aabb::new(
             Vec3::new(self.x0, self.y0, self.k - 0.0001),
             Vec3::new(self.x1, self.y1, self.k + 0.0001),
@@ -122,13 +122,14 @@ impl<T: Material + Clone> Hittable for XzRect<T> {
         })
     }
 
-    fn bounding_box(&self, time0: f64, time1: f64, output_box: &mut Aabb) -> bool {
+    fn bounding_box(&self, _time0: f64, _time1: f64, output_box: &mut Aabb) -> bool {
         *output_box = Aabb::new(
             Vec3::new(self.x0, self.k - 0.0001, self.z0),
             Vec3::new(self.x1, self.k + 0.0001, self.z1),
         );
         return true;
     }
+    #[warn(unused_assignments)]
     fn pdf_value(&self, origin: Vec3, v: Vec3) -> f64 {
         let mut rec: HitRecord = HitRecord {
             p: Vec3 {
@@ -224,7 +225,7 @@ impl<T: Material + Clone> Hittable for YzRect<T> {
         })
     }
 
-    fn bounding_box(&self, time0: f64, time1: f64, output_box: &mut Aabb) -> bool {
+    fn bounding_box(&self, _time0: f64, _time1: f64, output_box: &mut Aabb) -> bool {
         *output_box = Aabb::new(
             Vec3::new(self.k - 0.0001, self.y0, self.z0),
             Vec3::new(self.k + 0.0001, self.y1, self.z1),
@@ -292,7 +293,7 @@ impl<T: Material> Hittable for Triangle<T> {
         }
     }
 
-    fn bounding_box(&self, time0: f64, time1: f64, output_box: &mut Aabb) -> bool {
+    fn bounding_box(&self, _time0: f64, _time1: f64, output_box: &mut Aabb) -> bool {
         output_box.minimum = Vec3::new(
             f_3_min(self.p0.x, self.p1.x, self.p2.x),
             f_3_min(self.p0.y, self.p1.y, self.p2.y),

@@ -38,14 +38,6 @@ pub use threadpool::ThreadPool;
 pub use vec3::Ray;
 pub use vec3::Vec3;
 
-struct World {
-    pub height: u32,
-}
-impl World {
-    pub fn color(&self, _: u32, y: u32) -> u8 {
-        (y * 256 / self.height) as u8
-    }
-}
 // fn main() {
 //     let x = Vec3::new(1.0, 1.0, 1.0);
 //     println!("{:?}", x);
@@ -73,6 +65,7 @@ impl World {
 //     bar.finish();
 // }
 #[allow(clippy::many_single_char_names)]
+#[warn(unused_mut)]
 fn main() {
     //Image
     // let mut aspect_ratio: f64 = 16.0 / 9.0;
@@ -80,11 +73,11 @@ fn main() {
     // let mut image_height: u32 = (image_width as f64 / aspect_ratio) as u32;
     // let mut samples_per_pixel: u32 = 10;
     // let mut max_depth: u32 = 5;
-    let mut aspect_ratio: f64 = 1.0;
-    let mut image_width: u32 = 800;
-    let mut image_height: u32 = (image_width as f64 / aspect_ratio) as u32;
-    let mut samples_per_pixel: u32 = 5;
-    let mut max_depth: u32 = 10;
+    let aspect_ratio: f64 = 1.0;
+    let image_width: u32 = 800;
+    let image_height: u32 = (image_width as f64 / aspect_ratio) as u32;
+    let samples_per_pixel: u32 = 5;
+    let max_depth: u32 = 10;
 
     let mut lights = HittableList::default();
     lights.add(Arc::new(XzRect::new(
@@ -451,7 +444,7 @@ fn write_color(pixel_color: &Vec3, samples_per_pixel: u32) -> image::Rgb<u8> {
 //         return -1.0;
 //     }
 // }
-
+#[warn(unused_assignments)]
 fn ray_color(
     mut r: Ray,
     background: Vec3,
@@ -459,7 +452,6 @@ fn ray_color(
     lights: &HittableList,
     depth: u32,
 ) -> Vec3 {
-    #[warn(unused_assignments)]
     let mut rec = HitRecord {
         p: Vec3 {
             x: 0.0,
@@ -529,10 +521,10 @@ fn ray_color(
         },
         pdf_ptr: CosinePdf::new(Vec3::new(0.0, 0.0, 0.0)),
     };
-    let mut emitted: Vec3 =
+    let emitted: Vec3 =
         rec.mat_ptr
             .emitted(&mut r.clone(), &mut rec.clone(), rec.u, rec.v, &mut rec.p);
-    let mut pdf_val: f64 = 0.0;
+    let pdf_val: f64;
 
     if !rec.mat_ptr.scatter(&mut r, &mut rec.clone(), &mut srec) {
         return emitted;
@@ -567,7 +559,7 @@ fn ray_color(
     //let p1 = Arc::new(CosinePdf::new(rec.normal));
     //let mut mixed_pdf = MixturePdf::new(p0, p1);
     //let mut light_ptr = Arc::new(HittablePdf::new(lights.clone(), rec.p));
-    let mut light_ptr = HittablePdf::new(lights, rec.p);
+    let light_ptr = HittablePdf::new(lights, rec.p);
 
     //let mut light_pdf:HittablePdf = HittablePdf::new(lights.clone() , rec.p);
 
@@ -921,7 +913,7 @@ pub fn cornell_smoke() -> HittableList {
         white.clone(),
     )));
 
-    let mut box1 = Boxes::new(
+    let box1 = Boxes::new(
         Vec3::new(0.0, 0.0, 0.0),
         Vec3::new(165.0, 330.0, 165.0),
         white.clone(),
@@ -934,7 +926,7 @@ pub fn cornell_smoke() -> HittableList {
         Vec3::new(0.0, 0.0, 0.0),
     )));
 
-    let mut box2 = Boxes::new(
+    let box2 = Boxes::new(
         Vec3::new(0.0, 0.0, 0.0),
         Vec3::new(165.0, 165.0, 165.0),
         white.clone(),
@@ -1055,7 +1047,7 @@ pub fn final_scene() -> HittableList {
     let white = LambertianStatic::<SolidColor>::new(Vec3::new(0.73, 0.73, 0.73));
     let ns: i32 = 1000;
     #[warn(unused_variables)]
-    for j in 0..ns {
+    for _j in 0..ns {
         boxes2.add(Arc::new(Sphere::new(
             Vec3::new(
                 random_double_lim(0.0, 165.0),

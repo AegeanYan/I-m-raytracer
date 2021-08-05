@@ -31,10 +31,10 @@ impl<'a> HitRecord<'a> {
 pub trait Hittable: Send + Sync {
     fn hit(&self, r: Ray, t_min: f64, t_max: f64) -> Option<HitRecord>;
     fn bounding_box(&self, time0: f64, time1: f64, output_box: &mut Aabb) -> bool;
-    fn pdf_value(&self, o: Vec3, v: Vec3) -> f64 {
+    fn pdf_value(&self, _o: Vec3, _v: Vec3) -> f64 {
         return 0.0;
     }
-    fn random(&self, o: Vec3) -> Vec3 {
+    fn random(&self, _o: Vec3) -> Vec3 {
         return Vec3::new(1.0, 0.0, 0.0);
     }
 }
@@ -124,11 +124,12 @@ impl<T: Material> Hittable for Sphere<T> {
         return None;
     }
 
-    fn bounding_box(&self, time0: f64, time1: f64, output_box: &mut Aabb) -> bool {
+    fn bounding_box(&self, _time0: f64, _time1: f64, output_box: &mut Aabb) -> bool {
         output_box.minimum = self.center - Vec3::new(self.radius, self.radius, self.radius);
         output_box.maximum = self.center + Vec3::new(self.radius, self.radius, self.radius);
         return true;
     }
+    #[warn(unused_assignments)]
     fn pdf_value(&self, o: Vec3, v: Vec3) -> f64 {
         let mut rec: HitRecord = HitRecord {
             p: Vec3 {
@@ -284,7 +285,7 @@ impl Hittable for HittableList {
             return Vec3::new(0.0, 0.0, 0.0);
         }
         let ran = random_int(0, int_size - 1) as usize;
-        let mut vv = (*self.objects[ran]).random(o);
+        let vv = (*self.objects[ran]).random(o);
         return vv;
     }
 }
@@ -483,7 +484,7 @@ impl<T: Hittable> Hittable for RotateY<T> {
         // return true;
     }
 
-    fn bounding_box(&self, time0: f64, time1: f64, output_box: &mut Aabb) -> bool {
+    fn bounding_box(&self, _time0: f64, _time1: f64, output_box: &mut Aabb) -> bool {
         *output_box = self.bbox;
         return self.hasbox;
     }

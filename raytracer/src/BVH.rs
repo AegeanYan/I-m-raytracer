@@ -13,7 +13,7 @@ pub struct BvhNode {
 }
 impl BvhNode {
     pub fn new(mut list: HittableList, time0: f64, time1: f64) -> Self {
-        let mut len = list.objects.len();
+        let len = list.objects.len();
         // Self:BvhNode::new0(&mut list.objects , 0 , len , time0 , time1);
         return BvhNode::new0(&mut list.objects, 0, len, time0, time1);
     }
@@ -36,7 +36,7 @@ impl Hittable for BvhNode {
         None
     }
 
-    fn bounding_box(&self, time0: f64, time1: f64, output_box: &mut Aabb) -> bool {
+    fn bounding_box(&self, _time0: f64, _time1: f64, output_box: &mut Aabb) -> bool {
         // output_box.maximum = self.box0.maximum;
         // output_box.minimum = self.box0.minimum;
         *output_box = self.box0;

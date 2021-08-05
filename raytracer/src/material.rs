@@ -12,25 +12,30 @@ use std::sync::Arc;
 pub trait Material: Send + Sync {
     fn scatter(
         &self,
-        r_in: &mut Ray,
-        rec: &mut hit::HitRecord,
-        srec: &mut ScatterRecord,
+        _r_in: &mut Ray,
+        _rec: &mut hit::HitRecord,
+        _srec: &mut ScatterRecord,
         // albedo: &mut Vec3,
         // scattered: &mut Ray,
         // pdf:&mut f64
     ) -> bool {
         return false;
     }
-    fn scattering_pdf(&self, r_in: &mut Ray, rec: &mut hit::HitRecord, scattered: &mut Ray) -> f64 {
+    fn scattering_pdf(
+        &self,
+        _r_in: &mut Ray,
+        _rec: &mut hit::HitRecord,
+        _scattered: &mut Ray,
+    ) -> f64 {
         return 0.0;
     }
     fn emitted(
         &self,
-        r_in: &mut Ray,
-        rec: &mut hit::HitRecord,
-        u: f64,
-        v: f64,
-        p: &mut Vec3,
+        _r_in: &mut Ray,
+        _rec: &mut hit::HitRecord,
+        _u: f64,
+        _v: f64,
+        _p: &mut Vec3,
     ) -> Vec3 {
         return Vec3::new(0.0, 0.0, 0.0);
     }
@@ -54,9 +59,9 @@ impl Lambertian {
 impl Material for Lambertian {
     fn scatter(
         &self,
-        r_in: &mut Ray,
-        mut rec: &mut HitRecord,
-        mut srec: &mut ScatterRecord,
+        _r_in: &mut Ray,
+        rec: &mut HitRecord,
+        srec: &mut ScatterRecord,
         // mut albedo: &mut Vec3,
         // scattered: &mut Ray,
         // pdf:&mut f64,
@@ -129,7 +134,12 @@ impl Material for Lambertian {
         srec.pdf_ptr = CosinePdf::new(rec.normal);
         return true;
     }
-    fn scattering_pdf(&self, r_in: &mut Ray, rec: &mut hit::HitRecord, scattered: &mut Ray) -> f64 {
+    fn scattering_pdf(
+        &self,
+        _r_in: &mut Ray,
+        rec: &mut hit::HitRecord,
+        scattered: &mut Ray,
+    ) -> f64 {
         let cosine = Vec3::dot(rec.normal, Vec3::unit_vector(scattered.dir));
         if cosine < 0.0 {
             return 0.0;
@@ -156,7 +166,7 @@ impl<T: Texture> LambertianStatic<T> {
 impl<T: Texture> Material for LambertianStatic<T> {
     fn scatter(
         &self,
-        r_in: &mut Ray,
+        _r_in: &mut Ray,
         mut rec: &mut HitRecord,
         mut srec: &mut ScatterRecord,
     ) -> bool {
@@ -165,7 +175,12 @@ impl<T: Texture> Material for LambertianStatic<T> {
         srec.pdf_ptr = CosinePdf::new(rec.normal);
         return true;
     }
-    fn scattering_pdf(&self, r_in: &mut Ray, rec: &mut hit::HitRecord, scattered: &mut Ray) -> f64 {
+    fn scattering_pdf(
+        &self,
+        _r_in: &mut Ray,
+        rec: &mut hit::HitRecord,
+        scattered: &mut Ray,
+    ) -> f64 {
         let cosine = Vec3::dot(rec.normal, Vec3::unit_vector(scattered.dir));
         if cosine < 0.0 {
             return 0.0;
@@ -329,6 +344,7 @@ pub struct DiffuseLight {
 }
 
 impl DiffuseLight {
+    #[warn(dead_code)]
     pub fn new(a: Arc<dyn Texture>) -> Self {
         Self { emit: a }
     }
@@ -343,19 +359,19 @@ impl DiffuseLight {
 impl Material for DiffuseLight {
     fn scatter(
         &self,
-        r_in: &mut Ray,
-        rec: &mut HitRecord,
+        _r_in: &mut Ray,
+        _rec: &mut HitRecord,
         // attenuation: &mut Vec3,
         // scattered: &mut Ray,
         // pdf:&mut f64
-        srec: &mut ScatterRecord,
+        _srec: &mut ScatterRecord,
     ) -> bool {
         return false;
     }
 
     fn emitted(
         &self,
-        r_in: &mut Ray,
+        _r_in: &mut Ray,
         rec: &mut hit::HitRecord,
         u: f64,
         v: f64,
@@ -373,6 +389,7 @@ pub struct DiffuseLightStatic<T: Texture> {
     pub emit: T,
 }
 impl<T: Texture> DiffuseLightStatic<T> {
+    #[warn(dead_code)]
     pub fn new(a: T) -> Self {
         Self { emit: a }
     }
@@ -381,19 +398,19 @@ impl<T: Texture> DiffuseLightStatic<T> {
 impl<T: Texture> Material for DiffuseLightStatic<T> {
     fn scatter(
         &self,
-        r_in: &mut Ray,
-        rec: &mut HitRecord,
+        _r_in: &mut Ray,
+        _rec: &mut HitRecord,
         // attenuation: &mut Vec3,
         // scattered: &mut Ray,
         // pdf:&mut f64
-        srec: &mut ScatterRecord,
+        _srec: &mut ScatterRecord,
     ) -> bool {
         return false;
     }
 
     fn emitted(
         &self,
-        r_in: &mut Ray,
+        _r_in: &mut Ray,
         rec: &mut hit::HitRecord,
         u: f64,
         v: f64,
@@ -411,6 +428,7 @@ pub struct Isotropiuc<T: Texture> {
 }
 
 impl<T: Texture> Isotropiuc<T> {
+    #[warn(dead_code)]
     pub fn new0(a: T) -> Self {
         Self { albedo: a }
     }
@@ -422,7 +440,7 @@ impl<T: Texture> Isotropiuc<T> {
     }
 }
 impl<T: Texture> Material for Isotropiuc<T> {
-    fn scatter(&self, r_in: &mut Ray, mut rec: &mut HitRecord, srec: &mut ScatterRecord) -> bool {
+    fn scatter(&self, r_in: &mut Ray, rec: &mut HitRecord, srec: &mut ScatterRecord) -> bool {
         srec.specular_ray.orig = rec.p;
         srec.specular_ray.dir = Vec3::random_in_unit_sphere();
         srec.specular_ray.time = r_in.time;
@@ -443,7 +461,12 @@ impl<T: Texture> Material for Isotropiuc<T> {
         srec.pdf_ptr = CosinePdf::new(rec.normal);
         return true;
     }
-    fn scattering_pdf(&self, r_in: &mut Ray, rec: &mut hit::HitRecord, scattered: &mut Ray) -> f64 {
+    fn scattering_pdf(
+        &self,
+        _r_in: &mut Ray,
+        rec: &mut hit::HitRecord,
+        scattered: &mut Ray,
+    ) -> f64 {
         let cosine = Vec3::dot(rec.normal, Vec3::unit_vector(scattered.dir));
         if cosine < 0.0 {
             return 0.0;
@@ -456,11 +479,11 @@ impl<T: Texture> Material for Isotropiuc<T> {
     }
     fn emitted(
         &self,
-        r_in: &mut Ray,
-        rec: &mut hit::HitRecord,
-        u: f64,
-        v: f64,
-        p: &mut Vec3,
+        _r_in: &mut Ray,
+        _rec: &mut hit::HitRecord,
+        _u: f64,
+        _v: f64,
+        _p: &mut Vec3,
     ) -> Vec3 {
         return Vec3::new(0.0, 0.0, 0.0);
     }
@@ -469,13 +492,14 @@ pub struct IsotropiucStatic<T: Texture> {
     pub albedo: T,
 }
 impl<T: Texture> IsotropiucStatic<T> {
+    #[warn(dead_code)]
     pub fn new0(a: T) -> Self {
         Self { albedo: a }
     }
 }
 
 impl<T: Texture> Material for IsotropiucStatic<T> {
-    fn scatter(&self, r_in: &mut Ray, mut rec: &mut HitRecord, srec: &mut ScatterRecord) -> bool {
+    fn scatter(&self, r_in: &mut Ray, rec: &mut HitRecord, srec: &mut ScatterRecord) -> bool {
         srec.specular_ray.orig = rec.p;
         srec.specular_ray.dir = Vec3::random_in_unit_sphere();
         srec.specular_ray.time = r_in.time;
@@ -485,7 +509,12 @@ impl<T: Texture> Material for IsotropiucStatic<T> {
         srec.pdf_ptr = CosinePdf::new(rec.normal);
         return true;
     }
-    fn scattering_pdf(&self, r_in: &mut Ray, rec: &mut hit::HitRecord, scattered: &mut Ray) -> f64 {
+    fn scattering_pdf(
+        &self,
+        _r_in: &mut Ray,
+        rec: &mut hit::HitRecord,
+        scattered: &mut Ray,
+    ) -> f64 {
         let cosine = Vec3::dot(rec.normal, Vec3::unit_vector(scattered.dir));
         if cosine < 0.0 {
             return 0.0;
@@ -495,11 +524,11 @@ impl<T: Texture> Material for IsotropiucStatic<T> {
     }
     fn emitted(
         &self,
-        r_in: &mut Ray,
-        rec: &mut hit::HitRecord,
-        u: f64,
-        v: f64,
-        p: &mut Vec3,
+        _r_in: &mut Ray,
+        _rec: &mut hit::HitRecord,
+        _u: f64,
+        _v: f64,
+        _p: &mut Vec3,
     ) -> Vec3 {
         return Vec3::new(0.0, 0.0, 0.0);
     }
@@ -516,25 +545,30 @@ pub struct NoMaterial {}
 impl Material for NoMaterial {
     fn scatter(
         &self,
-        r_in: &mut Ray,
-        rec: &mut hit::HitRecord,
-        srec: &mut ScatterRecord,
+        _r_in: &mut Ray,
+        _rec: &mut hit::HitRecord,
+        _srec: &mut ScatterRecord,
         // albedo: &mut Vec3,
         // scattered: &mut Ray,
         // pdf:&mut f64
     ) -> bool {
         unreachable!()
     }
-    fn scattering_pdf(&self, r_in: &mut Ray, rec: &mut hit::HitRecord, scattered: &mut Ray) -> f64 {
+    fn scattering_pdf(
+        &self,
+        _r_in: &mut Ray,
+        _rec: &mut hit::HitRecord,
+        _scattered: &mut Ray,
+    ) -> f64 {
         unreachable!()
     }
     fn emitted(
         &self,
-        r_in: &mut Ray,
-        rec: &mut hit::HitRecord,
-        u: f64,
-        v: f64,
-        p: &mut Vec3,
+        _r_in: &mut Ray,
+        _rec: &mut hit::HitRecord,
+        _u: f64,
+        _v: f64,
+        _p: &mut Vec3,
     ) -> Vec3 {
         unreachable!()
     }

@@ -17,7 +17,7 @@ impl SolidColor {
     }
 }
 impl Texture for SolidColor {
-    fn value(&self, u: f64, v: f64, p: &mut Vec3) -> Vec3 {
+    fn value(&self, _u: f64, _v: f64, _p: &mut Vec3) -> Vec3 {
         return self.color_value;
     }
 }
@@ -77,7 +77,7 @@ impl NoiseTexture {
 }
 
 impl Texture for NoiseTexture {
-    fn value(&self, u: f64, v: f64, p: &mut Vec3) -> Vec3 {
+    fn value(&self, _u: f64, _v: f64, p: &mut Vec3) -> Vec3 {
         //return Vec3::new(1.0 , 1.0 , 1.0) * 0.5 * (self.noise.noise(&((*p) * self.scale)) + 1.0);
         //return Vec3::new(1.0 , 1.0 , 1.0) * self.noise.turb(&mut((*p) * self.scale) , 7);
         return Vec3::new(1.0, 1.0, 1.0)
@@ -85,7 +85,6 @@ impl Texture for NoiseTexture {
             * (1.0 + (self.scale * p.z + self.noise.turb(&mut p.clone(), 7) * 10.0).sin());
     }
 }
-const BYTES_PER_PIXEL: i32 = 3;
 pub struct ImageTexture {
     pub data: image::RgbImage,
     pub width: i32,
@@ -120,9 +119,9 @@ impl ImageTexture {
 
 impl Texture for ImageTexture {
     #[warn(clippy::many_single_char_names)]
-    fn value(&self, mut us: f64, mut vs: f64, p: &mut Vec3) -> Vec3 {
-        let mut ui = clamp(us, 0.0, 1.0);
-        let mut vi = 1.0 - clamp(vs, 0.0, 1.0);
+    fn value(&self, us: f64, vs: f64, p: &mut Vec3) -> Vec3 {
+        let ui = clamp(us, 0.0, 1.0);
+        let vi = 1.0 - clamp(vs, 0.0, 1.0);
 
         let mut ik = (ui * self.width as f64) as i32;
         let mut jk = (vi * self.height as f64) as i32;

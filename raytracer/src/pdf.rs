@@ -92,7 +92,7 @@ impl<'a, T1: Pdf, T2: Pdf> Pdf for MixturePdf<'a, T1, T2> {
     }
 
     fn generate(&self) -> Vec3 {
-        let mut vv: Vec3;
+        let vv: Vec3;
         if random_double() < 0.5 {
             vv = self.p1.generate();
         } else {
@@ -104,7 +104,7 @@ impl<'a, T1: Pdf, T2: Pdf> Pdf for MixturePdf<'a, T1, T2> {
 
 pub struct NoPdf {}
 impl Pdf for NoPdf {
-    fn value(&self, direction: &mut Vec3) -> f64 {
+    fn value(&self, _direction: &mut Vec3) -> f64 {
         unreachable!()
     }
 

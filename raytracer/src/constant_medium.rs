@@ -14,6 +14,7 @@ pub struct ConstantMedium<T0: Hittable, T1: Material> {
 }
 
 impl<T0: Hittable, T1: Material> ConstantMedium<T0, T1> {
+    #[warn(dead_code)]
     pub fn new0<T2: Texture>(b: T0, d: f64, a: T2) -> ConstantMedium<T0, Isotropiuc<T2>> {
         ConstantMedium {
             boundary: b,
@@ -34,9 +35,6 @@ impl<T0: Hittable> ConstantMedium<T0, Isotropiuc<SolidColor>> {
 
 impl<T0: Hittable, T1: Material> Hittable for ConstantMedium<T0, T1> {
     fn hit(&self, r: Ray, t_min: f64, t_max: f64) -> Option<HitRecord> {
-        let enableDebug: bool = false;
-        let debugging: bool = enableDebug && random_double() < 0.00001;
-
         let rec1 = self.boundary.hit(r, -INFINITY, INFINITY);
         if rec1.is_none() {
             return None;
