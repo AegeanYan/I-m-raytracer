@@ -1,12 +1,11 @@
 use crate::hit::HitRecord;
-use crate::material::{Lambertian, Material, Metal};
+use crate::material::{Material, Metal};
 use crate::Vec3;
 use crate::AABB::Aabb;
 use crate::{random_double_lim, Hittable};
 use crate::{rtweekend::*, Ray};
 use std::f64::INFINITY;
 use std::ops::Mul;
-use std::sync::Arc;
 
 pub struct XyRect<T: Material + Clone> {
     pub mp: T,

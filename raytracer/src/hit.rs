@@ -1,8 +1,6 @@
 use crate::material::{Lambertian, Material, Metal, NoMaterial};
 use crate::onb::Onb;
-use crate::pdf::NoPdf;
-use crate::{degrees_to_radians, random_double, random_int, MovingSphere, Ray, Vec3, AABB::Aabb};
-use image::imageops::overlay_bounds;
+use crate::{degrees_to_radians, random_int, MovingSphere, Ray, Vec3, AABB::Aabb};
 use std::f64::consts::PI;
 use std::f64::INFINITY;
 use std::ops::{Add, Div, Mul, Sub};
@@ -81,11 +79,11 @@ impl<T: Material> Hittable for Sphere<T> {
             let mut t: f64 = (-half_b - root) / a;
             if t > t_min && t < t_max {
                 let p = r.at(t);
-                let outward_normal = (p.sub(self.center.clone()).div(self.radius));
+                let outward_normal = p.sub(self.center.clone()).div(self.radius);
                 let mut u = 0.0;
                 let mut v = 0.0;
                 Sphere::<Metal>::get_sphere_uv(outward_normal, &mut u, &mut v);
-                let front_face = (Vec3::dot(r.dir, outward_normal) < 0.0);
+                let front_face = Vec3::dot(r.dir, outward_normal) < 0.0;
                 let mut flag = 1.0;
                 if !front_face {
                     flag = -1.0;
@@ -103,11 +101,11 @@ impl<T: Material> Hittable for Sphere<T> {
             t = (-half_b + root) / a;
             if t > t_min && t < t_max {
                 let p = r.at(t);
-                let outward_normal = (p.sub(self.center.clone()).div(self.radius));
+                let outward_normal = p.sub(self.center.clone()).div(self.radius);
                 let mut u = 0.0;
                 let mut v = 0.0;
                 Sphere::<Metal>::get_sphere_uv(outward_normal, &mut u, &mut v);
-                let front_face = (Vec3::dot(r.dir, outward_normal) < 0.0);
+                let front_face = Vec3::dot(r.dir, outward_normal) < 0.0;
                 let mut flag = 1.0;
                 if !front_face {
                     flag = -1.0;
@@ -160,7 +158,7 @@ impl<T: Material> Hittable for Sphere<T> {
                 return 0.0;
             }
         }
-        let cos_theta_max = (1.0 - self.radius * self.radius / (self.center - o).length_squared());
+        let cos_theta_max = 1.0 - self.radius * self.radius / (self.center - o).length_squared();
         let solid_angle = 2.0 * PI * (1.0 - cos_theta_max);
 
         return 1.0 / solid_angle;
@@ -322,7 +320,7 @@ impl<T: Hittable> Hittable for Translate<T> {
         let moved_r = Ray::new(r.orig.sub(self.offset.clone()), r.dir.clone(), r.time);
         match self.ptr.hit(moved_r, t_min, t_max) {
             Some(rec) => {
-                let front_face = (Vec3::dot(r.dir, rec.normal) < 0.0);
+                let front_face = Vec3::dot(r.dir, rec.normal) < 0.0;
                 let mut flag = 1.0;
                 if !front_face {
                     flag = -1.0;

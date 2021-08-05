@@ -1,15 +1,12 @@
+use crate::hit;
 use crate::hit::HitRecord;
-use crate::onb::Onb;
-use crate::pdf::{random_cosine_direction, CosinePdf, NoPdf};
+use crate::pdf::CosinePdf;
 use crate::random_double;
 use crate::texture::SolidColor;
 use crate::texture::Texture;
 use crate::Ray;
 use crate::Vec3;
-use crate::{hit, random_double_lim};
-use imageproc::math::l1_norm;
 use std::f64::consts::PI;
-use std::ptr::null;
 use std::sync::Arc;
 
 pub trait Material: Send + Sync {

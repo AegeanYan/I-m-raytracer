@@ -1,14 +1,10 @@
 use crate::hit::{HitRecord, Sphere};
-use crate::material;
 use crate::material::Lambertian;
 use crate::Hittable;
 use crate::Material;
 use crate::Vec3;
-use crate::{hit, Ray, AABB::Aabb};
-use std::cmp::{max, min};
-use std::fs::read;
+use crate::{Ray, AABB::Aabb};
 use std::ops::Mul;
-use std::sync::Arc;
 
 pub struct MovingSphere<T: Material> {
     pub center0: Vec3,
@@ -86,7 +82,7 @@ impl<T: Material> Hittable for MovingSphere<T> {
         let t = root;
         let p = r.at(t);
         let outward_normal = (p - MovingSphere::center(self, r.time)) / self.radius;
-        let front_face = (Vec3::dot(r.dir, outward_normal.clone()) < 0.0);
+        let front_face = Vec3::dot(r.dir, outward_normal.clone()) < 0.0;
         let mut flag = 1.0;
         if !front_face {
             flag = -1.0;

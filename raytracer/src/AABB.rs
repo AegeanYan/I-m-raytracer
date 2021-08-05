@@ -1,7 +1,5 @@
-use crate::Hittable;
+use crate::Ray;
 use crate::Vec3;
-use crate::{rtweekend, Ray};
-use std::cmp::{max, min};
 use std::mem::swap;
 
 #[derive(Clone, Copy)]

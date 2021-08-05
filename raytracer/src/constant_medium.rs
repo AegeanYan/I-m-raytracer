@@ -1,12 +1,11 @@
 use crate::hit::HitRecord;
-use crate::material::{Isotropiuc, IsotropiucStatic, Metal};
+use crate::material::Isotropiuc;
 use crate::texture::{SolidColor, Texture};
 use crate::Hittable;
 use crate::Material;
 use crate::AABB::Aabb;
-use crate::{random_double, rtweekend, Ray, Vec3};
+use crate::{random_double, Ray, Vec3};
 use std::f64::INFINITY;
-use std::sync::Arc;
 
 pub struct ConstantMedium<T0: Hittable, T1: Material> {
     pub boundary: T0,

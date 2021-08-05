@@ -1,6 +1,5 @@
+use crate::random_int;
 use crate::Vec3;
-use crate::{random_double, random_int, rtweekend};
-use std::vec;
 
 const POINT_COUNT: usize = 256;
 #[derive(Clone)]
@@ -113,10 +112,10 @@ impl Perlin {
         for di in 0..2 {
             for dj in 0..2 {
                 for dk in 0..2 {
-                    c[di][dj][dk] = (self.ranvec[(self.perm_x[((i + di as i32) & 255) as usize]
+                    c[di][dj][dk] = self.ranvec[(self.perm_x[((i + di as i32) & 255) as usize]
                         ^ self.perm_y[((j + dj as i32) & 255) as usize]
                         ^ self.perm_z[((k + dk as i32) & 255) as usize])
-                        as usize]);
+                        as usize];
                 }
             }
         }

@@ -2,7 +2,6 @@ use crate::hit::Hittable;
 use crate::onb::Onb;
 use crate::{random_double, Vec3};
 use std::f64::consts::PI;
-use std::sync::Arc;
 
 pub trait Pdf: Sync + Send {
     fn value(&self, direction: &mut Vec3) -> f64;

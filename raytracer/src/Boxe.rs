@@ -1,12 +1,9 @@
-use crate::aarect;
 use crate::aarect::{XyRect, XzRect, YzRect};
 use crate::hit::{HitRecord, Hittable};
 use crate::material::Material;
-use crate::HittableList;
 use crate::AABB::Aabb;
-use crate::{rtweekend, Ray, Vec3};
+use crate::{Ray, Vec3};
 use std::option::Option::Some;
-use std::sync::Arc;
 
 pub struct Boxes<T: Material + Clone> {
     pub box_min: Vec3,

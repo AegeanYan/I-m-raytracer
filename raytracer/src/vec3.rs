@@ -302,15 +302,13 @@ impl Vec3 {
         );
     }
     pub fn random_in_unit_sphere() -> Vec3 {
-        #[warn(while_true)]
-        while true {
+        loop {
             let p: Vec3 = Vec3::random_limit(-1.0, 1.0);
             if p.length_squared() >= 1.0 {
                 continue;
             }
             return p;
         }
-        return Vec3::new(0.0, 0.0, 0.0);
     }
 
     pub fn random_unit_vector() -> Vec3 {
@@ -340,8 +338,7 @@ impl Vec3 {
     }
 
     pub fn random_in_unit_disk() -> Vec3 {
-        #[warn(while_true)]
-        while true {
+        loop {
             let p: Vec3 = Vec3::new(
                 random_double_lim(-1.0, 1.0),
                 random_double_lim(-1.0, 1.0),
@@ -352,7 +349,6 @@ impl Vec3 {
             }
             return p;
         }
-        return Vec3::new(0.0, 0.0, 0.0);
     }
 }
 // #[cfg(test)]
