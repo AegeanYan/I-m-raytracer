@@ -31,31 +31,31 @@ impl<T: Material + Clone> XyRect<T> {
 impl<T: Material + Clone> Hittable for XyRect<T> {
     #[warn(clippy::many_single_char_names)]
     fn hit(&self, r: Ray, t_min: f64, t_max: f64) -> Option<HitRecord> {
-        let t = (self.k - r.orig.z) / r.dir.z;
-        if t < t_min || t > t_max {
+        let ti = (self.k - r.orig.z) / r.dir.z;
+        if ti < t_min || ti > t_max {
             return None;
         }
-        let x = r.orig.x + t * r.dir.x;
-        let y = r.orig.y + t * r.dir.y;
-        if x < self.x0 || x > self.x1 || y < self.y0 || y > self.y1 {
+        let xi = r.orig.x + ti * r.dir.x;
+        let yi = r.orig.y + ti * r.dir.y;
+        if xi < self.x0 || xi > self.x1 || yi < self.y0 || yi > self.y1 {
             return None;
         }
-        let u = (x - self.x0) / (self.x1 - self.x0);
-        let v = (y - self.y0) / (self.y1 - self.y0);
+        let ui = (xi - self.x0) / (self.x1 - self.x0);
+        let vi = (yi - self.y0) / (self.y1 - self.y0);
         let outward_normal = Vec3::new(0.0, 0.0, 1.0);
-        let p = r.at(t);
+        let pi = r.at(ti);
         let front_face = Vec3::dot(r.dir, outward_normal.clone()) < 0.0;
         let mut flag = -1.0;
         if front_face {
             flag = 1.0;
         }
         Some(HitRecord {
-            p,
+            p:pi,
             normal: outward_normal.mul(flag),
             mat_ptr: &self.mp,
-            t,
-            u,
-            v,
+            t:ti,
+            u:ui,
+            v:vi,
             front_face,
         })
     }
@@ -93,31 +93,31 @@ impl<T: Material + Clone> XzRect<T> {
 impl<T: Material + Clone> Hittable for XzRect<T> {
     #[warn(clippy::many_single_char_names)]
     fn hit(&self, r: Ray, t_min: f64, t_max: f64) -> Option<HitRecord> {
-        let t = (self.k - r.orig.y) / r.dir.y;
-        if t < t_min || t > t_max {
+        let ti = (self.k - r.orig.y) / r.dir.y;
+        if ti < t_min || ti > t_max {
             return None;
         }
-        let x = r.orig.x + t * r.dir.x;
-        let z = r.orig.z + t * r.dir.z;
-        if x < self.x0 || x > self.x1 || z < self.z0 || z > self.z1 {
+        let xi = r.orig.x + ti * r.dir.x;
+        let zi = r.orig.z + ti * r.dir.z;
+        if xi < self.x0 || xi > self.x1 || zi < self.z0 || zi > self.z1 {
             return None;
         }
-        let u = (x - self.x0) / (self.x1 - self.x0);
-        let v = (z - self.z0) / (self.z1 - self.z0);
+        let ui = (xi - self.x0) / (self.x1 - self.x0);
+        let vi = (zi - self.z0) / (self.z1 - self.z0);
         let outward_normal = Vec3::new(0.0, 1.0, 0.0);
-        let p = r.at(t);
+        let pi = r.at(ti);
         let front_face = Vec3::dot(r.dir, outward_normal) < 0.0;
         let mut flag = -1.0;
         if front_face {
             flag = 1.0;
         }
         Some(HitRecord {
-            p,
+            p:pi,
             normal: outward_normal.mul(flag),
             mat_ptr: &self.mp,
-            t,
-            u,
-            v,
+            t:ti,
+            u:ui,
+            v:vi,
             front_face,
         })
     }
@@ -195,18 +195,18 @@ impl<T: Material + Clone> YzRect<T> {
 impl<T: Material + Clone> Hittable for YzRect<T> {
     #[warn(clippy::many_single_char_names)]
     fn hit(&self, r: Ray, t_min: f64, t_max: f64) -> Option<HitRecord> {
-        let t = (self.k - r.orig.x) / r.dir.x;
-        if t < t_min || t > t_max {
+        let ti = (self.k - r.orig.x) / r.dir.x;
+        if ti < t_min || ti > t_max {
             return None;
         }
-        let y = r.orig.y + t * r.dir.y;
-        let z = r.orig.z + t * r.dir.z;
-        if y < self.y0 || y > self.y1 || z < self.z0 || z > self.z1 {
+        let yi = r.orig.y + ti * r.dir.y;
+        let zi = r.orig.z + ti * r.dir.z;
+        if yi < self.y0 || yi > self.y1 || zi < self.z0 || zi > self.z1 {
             return None;
         }
-        let u = (y - self.y0) / (self.y1 - self.y0);
-        let v = (z - self.z0) / (self.z1 - self.z0);
-        let p = r.at(t);
+        let ui = (yi - self.y0) / (self.y1 - self.y0);
+        let vi = (zi - self.z0) / (self.z1 - self.z0);
+        let pi = r.at(ti);
         let outward_normal = Vec3::new(1.0, 0.0, 0.0);
         let front_face = Vec3::dot(r.dir, outward_normal.clone()) < 0.0;
         let mut flag = -1.0;
@@ -214,12 +214,12 @@ impl<T: Material + Clone> Hittable for YzRect<T> {
             flag = 1.0;
         }
         Some(HitRecord {
-            p,
+            p:pi,
             normal: outward_normal.mul(flag),
             mat_ptr: &self.mp,
-            t,
-            u,
-            v,
+            t:ti,
+            u:ui,
+            v:vi,
             front_face,
         })
     }

@@ -120,18 +120,18 @@ impl ImageTexture {
 
 impl Texture for ImageTexture {
     #[warn(clippy::many_single_char_names)]
-    fn value(&self, mut u: f64, mut v: f64, p: &mut Vec3) -> Vec3 {
-        let mut u = clamp(u, 0.0, 1.0);
-        let mut v = 1.0 - clamp(v, 0.0, 1.0);
+    fn value(&self, mut us: f64, mut vs: f64, p: &mut Vec3) -> Vec3 {
+        let mut ui = clamp(us, 0.0, 1.0);
+        let mut vi = 1.0 - clamp(vs, 0.0, 1.0);
 
-        let mut i = (u * self.width as f64) as i32;
-        let mut j = (v * self.height as f64) as i32;
+        let mut ik = (ui * self.width as f64) as i32;
+        let mut jk = (vi * self.height as f64) as i32;
 
-        if i >= self.width {
-            i = self.width - 1;
+        if ik >= self.width {
+            ik = self.width - 1;
         }
-        if j >= self.height {
-            j = self.height - 1;
+        if jk >= self.height {
+            jk = self.height - 1;
         }
 
         let color_scale: f64 = 1.0 / 255.0;
@@ -139,7 +139,7 @@ impl Texture for ImageTexture {
         //let pixel = image::GenericImageView::get_pixel(&self.data , i as u32 , j as u32);
         //let pixel = self.data.get_pixel(i as u32, j as u32);
         //let pixel = GenericImageView::get_pixel(&self.data , i as u32, j as u32);
-        let pixel = self.data.get_pixel(i as u32, j as u32);
+        let pixel = self.data.get_pixel(ik as u32, jk as u32);
         let vv = Vec3::new(
             pixel[0] as f64 * color_scale,
             pixel[1] as f64 * color_scale,

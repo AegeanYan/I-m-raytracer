@@ -65,25 +65,25 @@ impl<T: Material> Sphere<T> {
 impl<T: Material> Hittable for Sphere<T> {
     #[allow(clippy::suspicious_operation_groupings)]
     #[warn(clippy::many_single_char_names)]
-    fn hit(&self, r: Ray, t_min: f64, t_max: f64) -> Option<HitRecord> {
-        let oc: Vec3 = r.orig - self.center;
-        let a: f64 = r.dir.length_squared();
-        let half_b = Vec3::dot(r.dir, oc);
-        let c = oc.length_squared() - self.radius * self.radius;
-        let discriminant: f64 = half_b * half_b - a * c;
+    fn hit(&self, rs: Ray, t_min: f64, t_max: f64) -> Option<HitRecord> {
+        let oc: Vec3 = rs.orig - self.center;
+        let ai: f64 = rs.dir.length_squared();
+        let half_b = Vec3::dot(rs.dir, oc);
+        let ci = oc.length_squared() - self.radius * self.radius;
+        let discriminant: f64 = half_b * half_b - ai * ci;
         if discriminant <= 0.0 {
             return None;
         }
         if discriminant > 0.0 {
             let root: f64 = discriminant.sqrt();
-            let mut t: f64 = (-half_b - root) / a;
-            if t > t_min && t < t_max {
-                let p = r.at(t);
+            let mut ti: f64 = (-half_b - root) / ai;
+            if ti > t_min && ti < t_max {
+                let p = rs.at(ti);
                 let outward_normal = p.sub(self.center.clone()).div(self.radius);
-                let mut u = 0.0;
-                let mut v = 0.0;
-                Sphere::<Metal>::get_sphere_uv(outward_normal, &mut u, &mut v);
-                let front_face = Vec3::dot(r.dir, outward_normal) < 0.0;
+                let mut ui = 0.0;
+                let mut vi = 0.0;
+                Sphere::<Metal>::get_sphere_uv(outward_normal, &mut ui, &mut vi);
+                let front_face = Vec3::dot(rs.dir, outward_normal) < 0.0;
                 let mut flag = 1.0;
                 if !front_face {
                     flag = -1.0;
@@ -92,31 +92,31 @@ impl<T: Material> Hittable for Sphere<T> {
                     p,
                     normal: outward_normal.mul(flag),
                     mat_ptr: &(self.mat_ptr),
-                    t,
-                    u,
-                    v,
+                    t:ti,
+                    u:ui,
+                    v:vi,
                     front_face,
                 });
             }
-            t = (-half_b + root) / a;
-            if t > t_min && t < t_max {
-                let p = r.at(t);
-                let outward_normal = p.sub(self.center.clone()).div(self.radius);
-                let mut u = 0.0;
-                let mut v = 0.0;
-                Sphere::<Metal>::get_sphere_uv(outward_normal, &mut u, &mut v);
-                let front_face = Vec3::dot(r.dir, outward_normal) < 0.0;
+            ti = (-half_b + root) / ai;
+            if ti > t_min && ti < t_max {
+                let pi = rs.at(ti);
+                let outward_normal = pi.sub(self.center.clone()).div(self.radius);
+                let mut ui = 0.0;
+                let mut vi = 0.0;
+                Sphere::<Metal>::get_sphere_uv(outward_normal, &mut ui, &mut vi);
+                let front_face = Vec3::dot(rs.dir, outward_normal) < 0.0;
                 let mut flag = 1.0;
                 if !front_face {
                     flag = -1.0;
                 }
                 return Option::from(HitRecord {
-                    p,
+                    p:pi,
                     normal: outward_normal.mul(flag),
                     mat_ptr: &(self.mat_ptr),
-                    t,
-                    u,
-                    v,
+                    t:ti,
+                    u:ui,
+                    v:vi,
                     front_face,
                 });
             }
