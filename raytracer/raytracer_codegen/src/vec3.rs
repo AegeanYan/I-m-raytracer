@@ -1,7 +1,16 @@
-use crate::{random_double, random_double_lim};
 use std::f64::consts::PI;
 use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign};
+use rand::Rng;
 
+pub fn random_double() -> f64 {
+    let mut dou = rand::thread_rng();
+    return dou.gen();
+}
+
+pub fn random_double_lim(min: f64, max: f64) -> f64 {
+    let mut dou = rand::thread_rng();
+    return dou.gen_range(min, max);
+}
 #[derive(Clone, Debug, PartialEq, Copy)]
 pub struct Vec3 {
     pub x: f64,
@@ -38,15 +47,7 @@ impl Vec3 {
             _ => 0.0,
         };
     }
-    pub fn same_side(a:Vec3 , b:Vec3 , c:Vec3 , p:Vec3) -> bool{
-        let ab = b - a;
-        let ac = c - a;
-        let ap = p - a;
 
-        let v1 = Vec3::cross(ab , ac);
-        let v2 = Vec3::cross(ab , ap);
-        Vec3::dot(v1 , v2) >= 0.0
-    }
     pub fn near_zero(&self) -> bool {
         let s: f64 = 1e-8;
         return (self.x < s && self.y < s && self.z < s);

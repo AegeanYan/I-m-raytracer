@@ -1,4 +1,4 @@
-use crate::hit::HitRecord;
+use crate::hit::{HitRecord, Sphere};
 use crate::material;
 use crate::Hittable;
 use crate::Material;
@@ -6,29 +6,39 @@ use crate::Vec3;
 use crate::{hit, Ray, AABB::Aabb};
 use std::cmp::{max, min};
 use std::sync::Arc;
+use std::fs::read;
+use std::ops::Mul;
+use crate::material::Lambertian;
 
-pub struct MovingSphere {
+pub struct MovingSphere<T:Material> {
     pub center0: Vec3,
     pub center1: Vec3,
     pub time0: f64,
     pub time1: f64,
     pub radius: f64,
-    pub mat_ptr: Arc<dyn material::Material>,
+    pub mat_ptr: T,
 }
 
-impl MovingSphere {
+impl<T:Material> MovingSphere<T>{
     pub fn center(&self, time: f64) -> Vec3 {
         return self.center0
             + (self.center1 - self.center0) * (time - self.time0) / (self.time1 - self.time0);
     }
-    pub fn new(cen0:Vec3 , cen1:Vec3 , time0:f64 , time1:f64 , r:f64 , m:Arc<dyn Material>)->Self{
-        Self{
+    pub fn new(
+        cen0: Vec3,
+        cen1: Vec3,
+        time0: f64,
+        time1: f64,
+        r: f64,
+        m: T,
+    ) -> Self {
+        Self {
             center0: cen0,
             center1: cen1,
             time0,
             time1,
             radius: r,
-            mat_ptr: m
+            mat_ptr: m,
         }
     }
     pub fn surrounding_box(box0: Aabb, box1: Aabb) -> Aabb {
@@ -50,8 +60,8 @@ impl MovingSphere {
     }
 }
 
-impl Hittable for MovingSphere {
-    fn hit(&self, r: Ray, t_min: f64, t_max: f64, rec: &mut HitRecord) -> bool {
+impl<T:Material> Hittable for MovingSphere<T> {
+    fn hit(&self, r: Ray, t_min: f64, t_max: f64) -> Option<HitRecord> {
         let oc: Vec3 = r.orig - MovingSphere::center(self, r.time);
         let a: f64 = r.dir.length_squared();
         let half_b = Vec3::dot(oc, r.dir);
@@ -59,7 +69,7 @@ impl Hittable for MovingSphere {
 
         let discriminant: f64 = half_b * half_b - a * c;
         if discriminant < 0.0 {
-            return false;
+            return None;
         }
 
         let sqrtd = discriminant.sqrt();
@@ -67,17 +77,36 @@ impl Hittable for MovingSphere {
         if root < t_min || t_max < root {
             root = (-half_b + sqrtd) / a;
             if root < t_min || t_max < root {
-                return false;
+                return None;
             }
         }
 
-        rec.t = root;
-        rec.p = r.at(rec.t);
-        let outward_normal: Vec3 = (rec.p - MovingSphere::center(self, r.time)) / self.radius;
-        rec.set_face_normal(r, outward_normal);
-        rec.mat_ptr = self.mat_ptr.clone();
+        // rec.t = root;
+        // rec.p = r.at(rec.t);
+        // let outward_normal: Vec3 = (rec.p - MovingSphere::center(self, r.time)) / self.radius;
+        // rec.set_face_normal(r, outward_normal);
+        // rec.mat_ptr = self.mat_ptr.clone();
+        //
+        // return true;
+        let t = root;
+        let p = r.at(t);
+        let outward_normal = (p - MovingSphere::center(self , r.time)) / self.radius;
+        let front_face = (Vec3::dot(r.dir , outward_normal.clone()) < 0.0);
+        let mut flag = 1.0;
+        if !front_face {flag = -1.0; };
+        let mut u = 0.0;
+        let mut v = 0.0;
+        Sphere::<Lambertian>::get_sphere_uv(outward_normal , &mut u , &mut v);
+        return Some(HitRecord{
+            p,
+            normal: outward_normal.mul(flag),
+            mat_ptr: &self.mat_ptr,
+            t,
+            u,
+            v,
+            front_face
+        })
 
-        return true;
     }
 
     fn bounding_box(&self, time0: f64, time1: f64, output_box: &mut Aabb) -> bool {
@@ -113,8 +142,8 @@ impl Hittable for MovingSphere {
             MovingSphere::center(self, time1) - Vec3::new(self.radius, self.radius, self.radius);
         box1.maximum =
             MovingSphere::center(self, time1) + Vec3::new(self.radius, self.radius, self.radius);
-        output_box.minimum = MovingSphere::surrounding_box(box0, box1).minimum;
-        output_box.maximum = MovingSphere::surrounding_box(box0, box1).maximum;
+        output_box.minimum = MovingSphere::<Lambertian>::surrounding_box(box0, box1).minimum;
+        output_box.maximum = MovingSphere::<Lambertian>::surrounding_box(box0, box1).maximum;
         return true;
     }
 }

@@ -1,120 +1,91 @@
-use crate::{rtweekend, Vec3, Ray, random_double};
+use crate::hit::HitRecord;
+use crate::material::{Isotropiuc, Metal, IsotropiucStatic};
+use crate::texture::{Texture, SolidColor};
 use crate::Hittable;
 use crate::Material;
-use crate::texture::Texture;
-use std::sync::Arc;
-use crate::material::{Isotropiuc, Metal};
-use crate::hit::HitRecord;
 use crate::AABB::Aabb;
+use crate::{random_double, rtweekend, Ray, Vec3};
 use std::f64::INFINITY;
+use std::sync::Arc;
 
-pub struct ConstantMedium {
-    pub boundary:Arc<dyn Hittable>,
-    pub phase_function:Arc<dyn Material>,
-    pub neg_inv_density:f64,
+pub struct ConstantMedium<T0 : Hittable , T1:Material> {
+    pub boundary: T0,
+    pub phase_function: T1,
+    pub neg_inv_density: f64,
 }
 
-impl ConstantMedium{
-    pub fn new0(b:Arc<dyn Hittable> , d:f64 , a:Arc<dyn Texture>)->Self{
-        Self{
-            boundary:b,
-            neg_inv_density:(-1.0 / d),
-            phase_function:Arc::new(Isotropiuc::new0(a)),
-        }
-    }
-    pub fn new(b:Arc<dyn Hittable> , d:f64 , c:Vec3)->Self{
-        Self{
-            boundary:b,
-            neg_inv_density:(-1.0 / d),
-            phase_function:Arc::new(Isotropiuc::new(c)),
+impl<T0:Hittable , T1:Material> ConstantMedium<T0 , T1> {
+    pub fn new0<T2:Texture>(b: T0, d: f64, a: T2) -> ConstantMedium<T0 , Isotropiuc<T2>> {
+        ConstantMedium {
+            boundary: b,
+            neg_inv_density: (-1.0 / d),
+            phase_function: (Isotropiuc::new0(a)),
         }
     }
 }
+impl <T0:Hittable> ConstantMedium<T0 , Isotropiuc<SolidColor>>{
+    pub fn new(b:T0 , d:f64 , c:Vec3) -> Self {
+        Self{
+            boundary:b,
+            phase_function:Isotropiuc::<SolidColor>::new(c) ,
+            neg_inv_density: (-1.0 / d),
+        }
+    }
+}
 
-impl Hittable for ConstantMedium{
-    fn hit(&self, r: Ray, t_min: f64, t_max: f64, rec: &mut HitRecord) -> bool {
-        let enableDebug:bool = false;
-        let debugging:bool = enableDebug && random_double() < 0.00001;
+impl<T0:Hittable , T1:Material> Hittable for ConstantMedium<T0 , T1> {
+    fn hit(&self, r: Ray, t_min: f64, t_max: f64) -> Option<HitRecord> {
+        let enableDebug: bool = false;
+        let debugging: bool = enableDebug && random_double() < 0.00001;
 
-        let mut rec1:HitRecord = HitRecord {
-            p: Vec3 {
-                x: 0.0,
-                y: 0.0,
-                z: 0.0
-            },
-            normal: Vec3 {
-                x: 0.0,
-                y: 0.0,
-                z: 0.0
-            },
-            mat_ptr: Arc::new(Metal::new()),
-            t: 0.0,
-            u: 0.0,
-            v: 0.0,
-            front_face: false
-        };
-        let mut rec2:HitRecord= HitRecord {
-            p: Vec3 {
-                x: 0.0,
-                y: 0.0,
-                z: 0.0
-            },
-            normal: Vec3 {
-                x: 0.0,
-                y: 0.0,
-                z: 0.0
-            },
-            mat_ptr: Arc::new(Metal::new()),
-            t: 0.0,
-            u: 0.0,
-            v: 0.0,
-            front_face: false
-        };
-
-        if !self.boundary.hit(r, -INFINITY, INFINITY, &mut rec1) {
-          return false;
-        };
-
-        if !self.boundary.hit(r , rec1.t + 0.0001 , INFINITY , &mut rec2) {
-            return false;
-        };
-
-        if debugging { std::println!("az")};
-
+        let rec1 = self.boundary.hit(r, -INFINITY , INFINITY);
+        if rec1.is_none() {
+            return None;
+        }
+        let mut rec1 = rec1.unwrap();
+        let rec2 = self.boundary.hit(r , rec1.t + 0.0001 , INFINITY);
+        if rec2.is_none() { return None;};
+        let mut rec2 = rec2.unwrap();
         if rec1.t < t_min {
             rec1.t = t_min;
         };
         if rec2.t > t_max {
             rec2.t = t_max;
         };
-
         if rec1.t >= rec2.t {
-            return false;
+            return None;
         };
-
-        if rec1.t < 0.0 {
-            rec1.t = 0.0;
-        };
-
+        if rec1.t < 0.0 {rec1.t = 0.0; };
         let ray_length = r.dir.length();
         let distance_inside_boundary = (rec2.t - rec1.t) * ray_length;
-        let hit_distance = self.neg_inv_density * random_double().log(2.0);
+        let hit_distance = self.neg_inv_density * (random_double().ln());
 
         if hit_distance > distance_inside_boundary {
-            return false;
-        }
-
-        rec.t = rec1.t + hit_distance / ray_length;
-        rec.p = r.at(rec.t);
-
-        rec.normal = Vec3::new(1.0 , 0.0 ,0.0);
-        rec.front_face = true;
-        rec.mat_ptr = self.phase_function.clone();
-
-        return true;
+            return None;
+        };
+        let t = rec1.t + hit_distance / ray_length;
+        let p = r.at(t);
+        Some(HitRecord{
+            p,
+            normal: Vec3::new(1.0,0.0,0.0),
+            mat_ptr: &self.phase_function,
+            t,
+            u: 0.0,
+            v: 0.0,
+            front_face: true
+        })
     }
 
     fn bounding_box(&self, time0: f64, time1: f64, output_box: &mut Aabb) -> bool {
-        return self.boundary.bounding_box(time0 , time1 , output_box);
+        return self.boundary.bounding_box(time0, time1, output_box);
     }
+
+
+    // fn pdf_value(&self, o: Vec3, v: Vec3) -> f64 {
+    //     //return random_double();
+    //     return 0.1;
+    // }
+    // fn random(&self, o: Vec3) -> Vec3 {
+    //     return Vec3::new(random_double(), random_double(), random_double());
+    // }
 }

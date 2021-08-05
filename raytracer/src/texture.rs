@@ -2,16 +2,16 @@ use crate::perlin;
 use crate::perlin::Perlin;
 use crate::Vec3;
 use crate::{clamp, rtweekend};
-use image::{GenericImageView};
+use image::GenericImageView;
 use imageproc::drawing::Canvas;
 use imageproc::noise;
 use std::path::Path;
 use std::sync::Arc;
 
-pub trait Texture {
+pub trait Texture:Send+Sync {
     fn value(&self, u: f64, v: f64, p: &mut Vec3) -> Vec3;
 }
-
+#[derive(Copy, Clone)]
 pub struct SolidColor {
     pub color_value: Vec3,
 }
@@ -25,7 +25,7 @@ impl Texture for SolidColor {
         return self.color_value;
     }
 }
-
+#[derive(Clone)]
 pub struct CheckerTexture {
     pub odd: Arc<dyn Texture>,
     pub even: Arc<dyn Texture>,
@@ -50,7 +50,22 @@ impl CheckerTexture {
         }
     }
 }
-
+#[derive(Clone)]
+pub struct CheckerTextureStatic<T1: Texture , T2:Texture>{
+    pub odd:T1,
+    pub even:T2,
+}
+impl<T1:Texture , T2:Texture> Texture for CheckerTextureStatic<T1 , T2> {
+    fn value(&self, u: f64, v: f64, p: &mut Vec3) -> Vec3 {
+        let sines: f64 = (10.0 * p.x).sin() * (10.0 * p.y).sin() * (10.0 * p.z).sin();
+        if sines < 0.0 {
+            return self.odd.value(u, v, p);
+        } else {
+            return self.even.value(u, v, p);
+        }
+    }
+}
+#[derive(Clone)]
 pub struct NoiseTexture {
     pub noise: perlin::Perlin,
     pub scale: f64,
@@ -96,11 +111,11 @@ impl ImageTexture {
         let ima = image::open(filename).expect("failed").to_rgb();
         let w = ima.width();
         let h = ima.height();
-        Self{
-            width:w as i32,
-            height:h as i32,
-            bytes_per_scanline:0,
-            data:ima
+        Self {
+            width: w as i32,
+            height: h as i32,
+            bytes_per_scanline: 0,
+            data: ima,
         }
     }
 }
@@ -125,11 +140,13 @@ impl Texture for ImageTexture {
         //let pixel = image::GenericImageView::get_pixel(&self.data , i as u32 , j as u32);
         //let pixel = self.data.get_pixel(i as u32, j as u32);
         //let pixel = GenericImageView::get_pixel(&self.data , i as u32, j as u32);
-        let pixel = self.data.get_pixel(i as u32,  j as u32);
-        return Vec3::new(
+        let pixel = self.data.get_pixel(i as u32, j as u32);
+        let vv = Vec3::new(
             pixel[0] as f64 * color_scale,
             pixel[1] as f64 * color_scale,
             pixel[2] as f64 * color_scale,
         );
+        let aa = vv.clone();
+        return aa;
     }
 }

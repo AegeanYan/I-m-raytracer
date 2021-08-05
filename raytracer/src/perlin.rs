@@ -3,6 +3,7 @@ use crate::{random_double, random_int, rtweekend};
 use std::vec;
 
 const POINT_COUNT: usize = 256;
+#[derive(Clone)]
 pub struct Perlin {
     //pub ranfloat:Vec<f64>,
     pub ranvec: Vec<Vec3>,

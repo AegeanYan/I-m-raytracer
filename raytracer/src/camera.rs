@@ -1,5 +1,5 @@
 use crate::{degrees_to_radians, random_double_lim, Ray, Vec3};
-
+#[derive(Copy, Clone)]
 pub struct Camera {
     pub origin: Vec3,
     pub lower_left_corner: Vec3,
