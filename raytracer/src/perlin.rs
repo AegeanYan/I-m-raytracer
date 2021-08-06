@@ -145,7 +145,7 @@ impl Perlin {
 
     pub fn turb(&self, p: &mut Vec3, depth: i32) -> f64 {
         let mut accum = 0.0;
-        let mut temp_p = p;
+        let temp_p = p;
         let mut weight = 1.0;
         for _i in 0..depth {
             accum += weight * Perlin::noise(&self, &temp_p);
