@@ -222,9 +222,8 @@ impl Material for Metal {
         true
     }
 }
-
+#[warn(dead_code)]
 impl Metal {
-    #[warn(dead_code)]
     pub fn new() -> Self {
         Self {
             fuzz: 0.0,
@@ -335,12 +334,12 @@ impl Dielectric {
     }
 }
 #[derive(Clone)]
+#[warn(dead_code)]
 pub struct DiffuseLight {
     pub emit: Arc<dyn Texture>,
 }
 
 impl DiffuseLight {
-    #[warn(dead_code)]
     pub fn new(a: Arc<dyn Texture>) -> Self {
         Self { emit: a }
     }
@@ -381,11 +380,11 @@ impl Material for DiffuseLight {
     }
 }
 #[derive(Clone)]
+#[warn(dead_code)]
 pub struct DiffuseLightStatic<T: Texture> {
     pub emit: T,
 }
 impl<T: Texture> DiffuseLightStatic<T> {
-    #[warn(dead_code)]
     pub fn new(a: T) -> Self {
         Self { emit: a }
     }
@@ -419,12 +418,12 @@ impl<T: Texture> Material for DiffuseLightStatic<T> {
         }
     }
 }
+#[warn(dead_code)]
 pub struct Isotropiuc<T: Texture> {
     pub albedo: T,
 }
 
 impl<T: Texture> Isotropiuc<T> {
-    #[warn(dead_code)]
     pub fn new0(a: T) -> Self {
         Self { albedo: a }
     }
@@ -484,11 +483,11 @@ impl<T: Texture> Material for Isotropiuc<T> {
         Vec3::new(0.0, 0.0, 0.0)
     }
 }
+#[warn(dead_code)]
 pub struct IsotropiucStatic<T: Texture> {
     pub albedo: T,
 }
 impl<T: Texture> IsotropiucStatic<T> {
-    #[warn(dead_code)]
     pub fn new0(a: T) -> Self {
         Self { albedo: a }
     }

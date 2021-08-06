@@ -1,5 +1,6 @@
 use crate::{degrees_to_radians, random_double_lim, Ray, Vec3};
 #[derive(Copy, Clone)]
+#[warn(dead_code)]
 pub struct Camera {
     pub origin: Vec3,
     pub lower_left_corner: Vec3,
@@ -12,10 +13,9 @@ pub struct Camera {
     pub time0: f64,
     pub time1: f64,
 }
-
+#[warn(dead_code)]
 impl Camera {
     #[allow(clippy::too_many_arguments)]
-    #[warn(dead_code)]
     pub fn new() -> Self {
         let aspect_ratio: f64 = 16.0 / 9.0;
         let viewport_height: f64 = 2.0;

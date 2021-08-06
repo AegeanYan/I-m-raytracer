@@ -6,7 +6,7 @@ use crate::Material;
 use crate::AABB::Aabb;
 use crate::{random_double, Ray, Vec3};
 use std::f64::INFINITY;
-
+#[warn(dead_code)]
 pub struct ConstantMedium<T0: Hittable, T1: Material> {
     pub boundary: T0,
     pub phase_function: T1,
@@ -14,7 +14,6 @@ pub struct ConstantMedium<T0: Hittable, T1: Material> {
 }
 
 impl<T0: Hittable, T1: Material> ConstantMedium<T0, T1> {
-    #[warn(dead_code)]
     pub fn new0<T2: Texture>(b: T0, d: f64, a: T2) -> ConstantMedium<T0, Isotropiuc<T2>> {
         ConstantMedium {
             boundary: b,
