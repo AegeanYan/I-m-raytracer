@@ -131,13 +131,12 @@ impl<T: Material> Hittable for Sphere<T> {
     }
     #[warn(unused_assignments)]
     fn pdf_value(&self, o: Vec3, v: Vec3) -> f64 {
-        let rec: HitRecord;
         // if !self.hit(Ray::new(o, v, 0.0), 0.001, INFINITY, &mut rec) {
         //     return 0.0;
         // };
         match self.hit(Ray::new(o, v, 0.0), 0.001, INFINITY) {
             Some(rec_) => {
-                rec = rec_;
+
             }
             None => {
                 return 0.0;
