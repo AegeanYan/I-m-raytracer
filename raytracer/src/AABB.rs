@@ -32,25 +32,25 @@ impl Aabb {
         // return true;
 
         for a in 0..3 {
-            let invD = match a {
+            let inv_d = match a {
                 0 => 1.0 / r.dir.x,
                 1 => 1.0 / r.dir.y,
                 2 => 1.0 / r.dir.z,
                 _ => 0.0,
             };
             let mut t0: f64 = match a {
-                0 => (self.minimum.x - r.orig.x) * invD,
-                1 => (self.minimum.y - r.orig.y) * invD,
-                2 => (self.minimum.z - r.orig.z) * invD,
+                0 => (self.minimum.x - r.orig.x) * inv_d,
+                1 => (self.minimum.y - r.orig.y) * inv_d,
+                2 => (self.minimum.z - r.orig.z) * inv_d,
                 _ => 0.0,
             };
             let mut t1: f64 = match a {
-                0 => (self.maximum.x - r.orig.x) * invD,
-                1 => (self.maximum.y - r.orig.y) * invD,
-                2 => (self.maximum.z - r.orig.z) * invD,
+                0 => (self.maximum.x - r.orig.x) * inv_d,
+                1 => (self.maximum.y - r.orig.y) * inv_d,
+                2 => (self.maximum.z - r.orig.z) * inv_d,
                 _ => 0.0,
             };
-            if invD < 0.0 {
+            if inv_d < 0.0 {
                 swap(&mut t0, &mut t1);
             }
             t_min = t0.max(t_min);
@@ -59,7 +59,7 @@ impl Aabb {
                 return false;
             }
         }
-        return true;
+        true
     }
 }
 impl Aabb {

@@ -17,6 +17,7 @@ pub struct Perlin {
 
 impl Perlin {
     #[allow(clippy::needless_range_loop)]
+    #[warn(clippy::manual_swap)]
     pub fn permute(p: &mut Vec<i32>, n: i32) {
         for i in n - 1..0 {
             let target: i32 = random_int(0, i as i32);
@@ -34,7 +35,7 @@ impl Perlin {
         }
         Perlin::permute(&mut p, POINT_COUNT as i32);
 
-        return p;
+        p
     }
 
     // pub fn perlin_generate_perm(p:&mut [i32;POINT_COUNT]){
@@ -119,7 +120,7 @@ impl Perlin {
                 }
             }
         }
-        return Perlin::trilinear_interp(c, u, v, w);
+        Perlin::trilinear_interp(c, u, v, w)
     }
     #[allow(clippy::needless_range_loop)]
     pub fn trilinear_interp(c: [[[Vec3; 2]; 2]; 2], u: f64, v: f64, w: f64) -> f64 {
@@ -139,18 +140,18 @@ impl Perlin {
                 }
             }
         }
-        return accum;
+        accum
     }
 
     pub fn turb(&self, p: &mut Vec3, depth: i32) -> f64 {
         let mut accum = 0.0;
-        let mut temp_p = p.clone();
+        let mut temp_p = p;
         let mut weight = 1.0;
         for _i in 0..depth {
             accum += weight * Perlin::noise(&self, &temp_p);
             weight *= 0.5;
-            temp_p *= 2.0;
+            *temp_p *= 2.0;
         }
-        return accum.abs();
+        accum.abs()
     }
 }

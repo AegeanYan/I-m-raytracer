@@ -74,7 +74,7 @@ impl Camera {
             time: random_double_lim(self.time0, self.time1),
             //time: 0.0,
         };
-        return ray;
+        ray
     }
     #[warn(dead_code)]
     pub fn camera(vfov: f64, aspect_ratio: f64) -> Self {
@@ -113,7 +113,7 @@ impl Camera {
             time1: 0.0,
         }
     }
-
+    #[warn(clippy::too_many_arguments)]
     pub fn camera_from_where(
         lookfrom: Vec3,
         lookat: Vec3,

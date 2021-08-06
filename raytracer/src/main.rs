@@ -410,7 +410,7 @@ fn write_color(pixel_color: &Vec3, samples_per_pixel: u32) -> image::Rgb<u8> {
     let ir: u8 = (256.0 * rtweekend::clamp(r, 0.0, 0.999)) as u8;
     let ig: u8 = (256.0 * rtweekend::clamp(g, 0.0, 0.999)) as u8;
     let ib: u8 = (256.0 * rtweekend::clamp(b, 0.0, 0.999)) as u8;
-    return image::Rgb([ir, ig, ib]);
+    image::Rgb([ir, ig, ib])
 }
 
 // fn ray_color(r:Ray) -> Vec3{
@@ -593,7 +593,7 @@ fn ray_color(
     let ans = emitted
         + ray_color(scattered, background, world, &lights, depth - 1) * srec.attenuation * recs
             / pdf_val;
-    return ans;
+    ans
     //return Vec3::new(0.0, 0.0, 0.0);
     // let unit_direction: Vec3 = Vec3::unit_vector(r.dir);
     // let t: f64 = 0.5 * (unit_direction.y + 1.0);
@@ -711,7 +711,7 @@ fn random_scene() -> HittableList {
         time1: 1.0,
     };
     world.add(Arc::new(mat3));
-    return world;
+    world
 }
 
 pub fn two_spheres() -> HittableList {
@@ -726,13 +726,13 @@ pub fn two_spheres() -> HittableList {
     let sph2: Sphere<LambertianStatic<CheckerTexture>> = Sphere {
         center: Vec3::new(0.0, 10.0, 0.0),
         radius: 10.0,
-        mat_ptr: LambertianStatic::news(checker.clone()),
+        mat_ptr: LambertianStatic::news(checker),
     };
 
     objects.add(Arc::new(sph1));
     objects.add(Arc::new(sph2));
 
-    return objects;
+    objects
 }
 
 pub fn two_perlin_spheres() -> HittableList {
@@ -748,13 +748,13 @@ pub fn two_perlin_spheres() -> HittableList {
     let sph2: Sphere<LambertianStatic<NoiseTexture>> = Sphere {
         center: Vec3::new(0.0, 2.0, 0.0),
         radius: 2.0,
-        mat_ptr: LambertianStatic::news(pertext.clone()),
+        mat_ptr: LambertianStatic::news(pertext),
     };
 
     objects.add(Arc::new(sph1));
     objects.add(Arc::new(sph2));
 
-    return objects;
+    objects
 }
 
 pub fn earth() -> HittableList {
@@ -767,7 +767,7 @@ pub fn earth() -> HittableList {
         mat_ptr: LambertianStatic::news(earth_texture),
     };
     objects.add(Arc::new(sph));
-    return objects;
+    objects
 }
 pub fn simple_light() -> HittableList {
     let mut objects: HittableList = HittableList { objects: vec![] };
@@ -781,14 +781,14 @@ pub fn simple_light() -> HittableList {
     let sph2: Sphere<LambertianStatic<NoiseTexture>> = Sphere {
         center: Vec3::new(0.0, 2.0, 0.0),
         radius: 2.0,
-        mat_ptr: LambertianStatic::news(pertext.clone()),
+        mat_ptr: LambertianStatic::news(pertext),
     };
     objects.add(Arc::new(sph1));
     objects.add(Arc::new(sph2));
     let difflight = DiffuseLight::new0(Vec3::new(4.0, 4.0, 4.0));
     objects.add(Arc::new(XyRect::new(3.0, 5.0, 1.0, 3.0, -2.0, difflight)));
 
-    return objects;
+    objects
 }
 
 pub fn cornell_box() -> HittableList {
@@ -825,14 +825,7 @@ pub fn cornell_box() -> HittableList {
         555.0,
         white.clone(),
     )));
-    objects.add(Arc::new(XyRect::new(
-        0.0,
-        555.0,
-        0.0,
-        555.0,
-        555.0,
-        white.clone(),
-    )));
+    objects.add(Arc::new(XyRect::new(0.0, 555.0, 0.0, 555.0, 555.0, white)));
 
     // let mut aluminum = Metal::news(Vec3::new(0.8,0.85,0.88) , 0.0);
     // let mut box1 = Boxes::new(Vec3::new(0.0,0.0,0.0),Vec3::new(165.0,330.0,165.0) , aluminum);
@@ -847,7 +840,7 @@ pub fn cornell_box() -> HittableList {
     //     glass.clone(),
     // )));
 
-    return objects;
+    objects
 }
 
 pub fn cornell_smoke() -> HittableList {
@@ -857,22 +850,8 @@ pub fn cornell_smoke() -> HittableList {
     let white = Lambertian::new(Vec3::new(0.73, 0.73, 0.73));
     let green = Lambertian::new(Vec3::new(0.12, 0.45, 0.15));
     let light = DiffuseLight::new0(Vec3::new(15.0, 15.0, 15.0));
-    objects.add(Arc::new(YzRect::new(
-        0.0,
-        555.0,
-        0.0,
-        555.0,
-        555.0,
-        green.clone(),
-    )));
-    objects.add(Arc::new(YzRect::new(
-        0.0,
-        555.0,
-        0.0,
-        555.0,
-        0.0,
-        red.clone(),
-    )));
+    objects.add(Arc::new(YzRect::new(0.0, 555.0, 0.0, 555.0, 555.0, green)));
+    objects.add(Arc::new(YzRect::new(0.0, 555.0, 0.0, 555.0, 0.0, red)));
     // objects.add(Arc::new(XzRect::new(
     //     113.0,
     //     443.0,
@@ -882,12 +861,7 @@ pub fn cornell_smoke() -> HittableList {
     //     light.clone(),
     // )));
     objects.add(Arc::new(FlipFace::new(XzRect::new(
-        123.0,
-        443.0,
-        127.0,
-        442.0,
-        554.0,
-        light.clone(),
+        123.0, 443.0, 127.0, 442.0, 554.0, light,
     ))));
     objects.add(Arc::new(XzRect::new(
         0.0,
@@ -930,7 +904,7 @@ pub fn cornell_smoke() -> HittableList {
     let box2 = Boxes::new(
         Vec3::new(0.0, 0.0, 0.0),
         Vec3::new(165.0, 165.0, 165.0),
-        white.clone(),
+        white,
     );
     let box2 = RotateY::new(box2, -18.0);
     let box2 = Translate::new(box2, Vec3::new(130.0, 0.0, 65.0));
@@ -940,7 +914,7 @@ pub fn cornell_smoke() -> HittableList {
         Vec3::new(1.0, 1.0, 1.0),
     )));
 
-    return objects;
+    objects
 }
 
 pub fn final_scene() -> HittableList {
@@ -979,12 +953,7 @@ pub fn final_scene() -> HittableList {
     // )));
 
     objects.add(Arc::new(FlipFace::new(XzRect::new(
-        123.0,
-        423.0,
-        147.0,
-        412.0,
-        554.0,
-        lighting.clone(),
+        123.0, 423.0, 147.0, 412.0, 554.0, lighting,
     ))));
     let center1 = Vec3::new(400.0, 400.0, 200.0);
     let center2 = Vec3::new(30.0, 0.0, 0.0) + center1;
@@ -1041,7 +1010,7 @@ pub fn final_scene() -> HittableList {
     objects.add(Arc::new(Sphere::new(
         Vec3::new(220.0, 280.0, 300.0),
         80.0,
-        LambertianStatic::news(pertext.clone()),
+        LambertianStatic::news(pertext),
     )));
 
     let mut boxes2: HittableList = HittableList { objects: vec![] };
@@ -1056,7 +1025,7 @@ pub fn final_scene() -> HittableList {
                 random_double_lim(0.0, 165.0),
             ),
             10.0,
-            white.clone(),
+            white,
         )));
     }
 
@@ -1065,7 +1034,7 @@ pub fn final_scene() -> HittableList {
         Vec3::new(-100.0, 270.0, 395.0),
     )));
 
-    return objects;
+    objects
 }
 pub fn get_obj(filename: &str, rate: f64) -> HittableList {
     let mut objects = HittableList { objects: vec![] };

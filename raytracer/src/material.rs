@@ -19,7 +19,7 @@ pub trait Material: Send + Sync {
         // scattered: &mut Ray,
         // pdf:&mut f64
     ) -> bool {
-        return false;
+        false
     }
     fn scattering_pdf(
         &self,
@@ -27,7 +27,7 @@ pub trait Material: Send + Sync {
         _rec: &mut hit::HitRecord,
         _scattered: &mut Ray,
     ) -> f64 {
-        return 0.0;
+        0.0
     }
     fn emitted(
         &self,
@@ -37,7 +37,7 @@ pub trait Material: Send + Sync {
         _v: f64,
         _p: &mut Vec3,
     ) -> Vec3 {
-        return Vec3::new(0.0, 0.0, 0.0);
+        Vec3::new(0.0, 0.0, 0.0)
     }
 }
 #[derive(Clone)]
@@ -130,9 +130,9 @@ impl Material for Lambertian {
         // srec.attenuation.x = self.albedo.value(rec.u , rec.v , &mut rec.p).x;
         // srec.attenuation.y = self.albedo.value(rec.u , rec.v , &mut rec.p).y;
         // srec.attenuation.z = self.albedo.value(rec.u , rec.v , &mut rec.p).z;
-        srec.attenuation = self.albedo.value(rec.u, rec.v, &mut rec.p).clone();
+        srec.attenuation = self.albedo.value(rec.u, rec.v, &mut rec.p);
         srec.pdf_ptr = CosinePdf::new(rec.normal);
-        return true;
+        true
     }
     fn scattering_pdf(
         &self,
@@ -142,9 +142,9 @@ impl Material for Lambertian {
     ) -> f64 {
         let cosine = Vec3::dot(rec.normal, Vec3::unit_vector(scattered.dir));
         if cosine < 0.0 {
-            return 0.0;
+            0.0
         } else {
-            return cosine / PI;
+            cosine / PI
         }
     }
 }
@@ -166,9 +166,9 @@ impl<T: Texture> LambertianStatic<T> {
 impl<T: Texture> Material for LambertianStatic<T> {
     fn scatter(&self, _r_in: &mut Ray, rec: &mut HitRecord, mut srec: &mut ScatterRecord) -> bool {
         srec.is_specular = false;
-        srec.attenuation = self.albedo.value(rec.u, rec.v, &mut rec.p).clone();
+        srec.attenuation = self.albedo.value(rec.u, rec.v, &mut rec.p);
         srec.pdf_ptr = CosinePdf::new(rec.normal);
-        return true;
+        true
     }
     fn scattering_pdf(
         &self,
@@ -178,9 +178,9 @@ impl<T: Texture> Material for LambertianStatic<T> {
     ) -> f64 {
         let cosine = Vec3::dot(rec.normal, Vec3::unit_vector(scattered.dir));
         if cosine < 0.0 {
-            return 0.0;
+            0.0
         } else {
-            return cosine / PI;
+            cosine / PI
         }
     }
 }
@@ -219,11 +219,12 @@ impl Material for Metal {
         srec.is_specular = true;
         srec.pdf_ptr = CosinePdf::new(Vec3::new(0.0, 0.0, 0.0));
         //return Vec3::dot(scattered.dir, rec.normal) > 0.0;
-        return true;
+        true
     }
 }
 
 impl Metal {
+    #[warn(dead_code)]
     pub fn new() -> Self {
         Self {
             fuzz: 0.0,
@@ -319,14 +320,14 @@ impl Material for Dielectric {
         srec.specular_ray.orig = rec.p;
         srec.specular_ray.dir = direction;
         srec.specular_ray.time = r_in.time;
-        return true;
+        true
     }
 }
 impl Dielectric {
     pub fn schlick(cosine: f64, ref_idx: f64) -> f64 {
         let mut r0: f64 = (1.0 - ref_idx) / (1.0 + ref_idx);
         r0 *= r0;
-        return r0 + (1.0 - r0) * (1.0 - cosine).powf(5.0);
+        r0 + (1.0 - r0) * (1.0 - cosine).powf(5.0)
     }
 
     pub fn new(ref_idx: f64) -> Self {
@@ -361,7 +362,7 @@ impl Material for DiffuseLight {
         // pdf:&mut f64
         _srec: &mut ScatterRecord,
     ) -> bool {
-        return false;
+        false
     }
 
     fn emitted(
@@ -373,9 +374,9 @@ impl Material for DiffuseLight {
         p: &mut Vec3,
     ) -> Vec3 {
         if rec.front_face {
-            return self.emit.value(u, v, p);
+            self.emit.value(u, v, p)
         } else {
-            return Vec3::new(0.0, 0.0, 0.0);
+            Vec3::new(0.0, 0.0, 0.0)
         }
     }
 }
@@ -400,7 +401,7 @@ impl<T: Texture> Material for DiffuseLightStatic<T> {
         // pdf:&mut f64
         _srec: &mut ScatterRecord,
     ) -> bool {
-        return false;
+        false
     }
 
     fn emitted(
@@ -412,9 +413,9 @@ impl<T: Texture> Material for DiffuseLightStatic<T> {
         p: &mut Vec3,
     ) -> Vec3 {
         if rec.front_face {
-            return self.emit.value(u, v, p);
+            self.emit.value(u, v, p)
         } else {
-            return Vec3::new(0.0, 0.0, 0.0);
+            Vec3::new(0.0, 0.0, 0.0)
         }
     }
 }
@@ -451,10 +452,10 @@ impl<T: Texture> Material for Isotropiuc<T> {
         // srec.attenuation.x = self.albedo.value(rec.u, rec.v, &mut rec.p).x;
         // srec.attenuation.y = self.albedo.value(rec.u, rec.v, &mut rec.p).y;
         // srec.attenuation.z = self.albedo.value(rec.u, rec.v, &mut rec.p).z;
-        srec.attenuation = self.albedo.value(rec.u, rec.v, &mut rec.p).clone();
+        srec.attenuation = self.albedo.value(rec.u, rec.v, &mut rec.p);
         srec.is_specular = false;
         srec.pdf_ptr = CosinePdf::new(rec.normal);
-        return true;
+        true
     }
     fn scattering_pdf(
         &self,
@@ -464,9 +465,9 @@ impl<T: Texture> Material for Isotropiuc<T> {
     ) -> f64 {
         let cosine = Vec3::dot(rec.normal, Vec3::unit_vector(scattered.dir));
         if cosine < 0.0 {
-            return 0.0;
+            0.0
         } else {
-            return cosine / PI;
+            cosine / PI
         }
         //return random_double();
         //return random_double_lim(0.0 , 0.5);
@@ -480,7 +481,7 @@ impl<T: Texture> Material for Isotropiuc<T> {
         _v: f64,
         _p: &mut Vec3,
     ) -> Vec3 {
-        return Vec3::new(0.0, 0.0, 0.0);
+        Vec3::new(0.0, 0.0, 0.0)
     }
 }
 pub struct IsotropiucStatic<T: Texture> {
@@ -499,10 +500,10 @@ impl<T: Texture> Material for IsotropiucStatic<T> {
         srec.specular_ray.dir = Vec3::random_in_unit_sphere();
         srec.specular_ray.time = r_in.time;
 
-        srec.attenuation = self.albedo.value(rec.u, rec.v, &mut rec.p).clone();
+        srec.attenuation = self.albedo.value(rec.u, rec.v, &mut rec.p);
         srec.is_specular = false;
         srec.pdf_ptr = CosinePdf::new(rec.normal);
-        return true;
+        true
     }
     fn scattering_pdf(
         &self,
@@ -512,9 +513,9 @@ impl<T: Texture> Material for IsotropiucStatic<T> {
     ) -> f64 {
         let cosine = Vec3::dot(rec.normal, Vec3::unit_vector(scattered.dir));
         if cosine < 0.0 {
-            return 0.0;
+            0.0
         } else {
-            return cosine / PI;
+            cosine / PI
         }
     }
     fn emitted(
@@ -525,7 +526,7 @@ impl<T: Texture> Material for IsotropiucStatic<T> {
         _v: f64,
         _p: &mut Vec3,
     ) -> Vec3 {
-        return Vec3::new(0.0, 0.0, 0.0);
+        Vec3::new(0.0, 0.0, 0.0)
     }
 }
 

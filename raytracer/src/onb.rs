@@ -6,13 +6,13 @@ pub struct Onb {
 
 impl Onb {
     pub fn get(&self, i: usize) -> Vec3 {
-        return self.axis[i];
+        self.axis[i]
     }
     pub fn local(&self, a: f64, b: f64, c: f64) -> Vec3 {
-        return self.axis[0] * a + self.axis[1] * b + self.axis[2] * c;
+        self.axis[0] * a + self.axis[1] * b + self.axis[2] * c
     }
     pub fn local0(&self, a: Vec3) -> Vec3 {
-        return self.axis[0] * a.x + self.axis[1] * a.y + self.axis[2] * a.z;
+        self.axis[0] * a.x + self.axis[1] * a.y + self.axis[2] * a.z
     }
     pub fn build_from_w(&mut self, n: &mut Vec3) {
         self.axis[2] = Vec3::unit_vector(*n);

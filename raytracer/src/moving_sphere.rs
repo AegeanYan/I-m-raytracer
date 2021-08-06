@@ -17,8 +17,8 @@ pub struct MovingSphere<T: Material> {
 
 impl<T: Material> MovingSphere<T> {
     pub fn center(&self, time: f64) -> Vec3 {
-        return self.center0
-            + (self.center1 - self.center0) * (time - self.time0) / (self.time1 - self.time0);
+        self.center0
+            + (self.center1 - self.center0) * (time - self.time0) / (self.time1 - self.time0)
     }
     pub fn new(cen0: Vec3, cen1: Vec3, time0: f64, time1: f64, r: f64, m: T) -> Self {
         Self {
@@ -45,7 +45,7 @@ impl<T: Material> MovingSphere<T> {
             minimum: small,
             maximum: big,
         };
-        return ab;
+        ab
     }
 }
 
@@ -80,7 +80,7 @@ impl<T: Material> Hittable for MovingSphere<T> {
         let ti = root;
         let pi = rs.at(ti);
         let outward_normal = (pi - MovingSphere::center(self, rs.time)) / self.radius;
-        let front_face = Vec3::dot(rs.dir, outward_normal.clone()) < 0.0;
+        let front_face = Vec3::dot(rs.dir, outward_normal) < 0.0;
         let mut flag = 1.0;
         if !front_face {
             flag = -1.0;
@@ -88,7 +88,7 @@ impl<T: Material> Hittable for MovingSphere<T> {
         let mut ui = 0.0;
         let mut vi = 0.0;
         Sphere::<Lambertian>::get_sphere_uv(outward_normal, &mut ui, &mut vi);
-        return Some(HitRecord {
+        Some(HitRecord {
             p: pi,
             normal: outward_normal.mul(flag),
             mat_ptr: &self.mat_ptr,
@@ -96,7 +96,7 @@ impl<T: Material> Hittable for MovingSphere<T> {
             u: ui,
             v: vi,
             front_face,
-        });
+        })
     }
 
     fn bounding_box(&self, time0: f64, time1: f64, output_box: &mut Aabb) -> bool {
@@ -134,6 +134,6 @@ impl<T: Material> Hittable for MovingSphere<T> {
             MovingSphere::center(self, time1) + Vec3::new(self.radius, self.radius, self.radius);
         output_box.minimum = MovingSphere::<Lambertian>::surrounding_box(box0, box1).minimum;
         output_box.maximum = MovingSphere::<Lambertian>::surrounding_box(box0, box1).maximum;
-        return true;
+        true
     }
 }

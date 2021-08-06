@@ -18,7 +18,7 @@ impl SolidColor {
 }
 impl Texture for SolidColor {
     fn value(&self, _u: f64, _v: f64, _p: &mut Vec3) -> Vec3 {
-        return self.color_value;
+        self.color_value
     }
 }
 #[derive(Clone)]
@@ -31,9 +31,9 @@ impl Texture for CheckerTexture {
     fn value(&self, u: f64, v: f64, p: &mut Vec3) -> Vec3 {
         let sines: f64 = (10.0 * p.x).sin() * (10.0 * p.y).sin() * (10.0 * p.z).sin();
         if sines < 0.0 {
-            return self.odd.value(u, v, p);
+            self.odd.value(u, v, p)
         } else {
-            return self.even.value(u, v, p);
+            self.even.value(u, v, p)
         }
     }
 }
@@ -55,9 +55,9 @@ impl<T1: Texture, T2: Texture> Texture for CheckerTextureStatic<T1, T2> {
     fn value(&self, u: f64, v: f64, p: &mut Vec3) -> Vec3 {
         let sines: f64 = (10.0 * p.x).sin() * (10.0 * p.y).sin() * (10.0 * p.z).sin();
         if sines < 0.0 {
-            return self.odd.value(u, v, p);
+            self.odd.value(u, v, p)
         } else {
-            return self.even.value(u, v, p);
+            self.even.value(u, v, p)
         }
     }
 }
@@ -80,9 +80,9 @@ impl Texture for NoiseTexture {
     fn value(&self, _u: f64, _v: f64, p: &mut Vec3) -> Vec3 {
         //return Vec3::new(1.0 , 1.0 , 1.0) * 0.5 * (self.noise.noise(&((*p) * self.scale)) + 1.0);
         //return Vec3::new(1.0 , 1.0 , 1.0) * self.noise.turb(&mut((*p) * self.scale) , 7);
-        return Vec3::new(1.0, 1.0, 1.0)
+        Vec3::new(1.0, 1.0, 1.0)
             * 0.5
-            * (1.0 + (self.scale * p.z + self.noise.turb(&mut p.clone(), 7) * 10.0).sin());
+            * (1.0 + (self.scale * p.z + self.noise.turb(&mut p.clone(), 7) * 10.0).sin())
     }
 }
 pub struct ImageTexture {
@@ -144,7 +144,6 @@ impl Texture for ImageTexture {
             pixel[1] as f64 * color_scale,
             pixel[2] as f64 * color_scale,
         );
-        let aa = vv.clone();
-        return aa;
+        vv
     }
 }

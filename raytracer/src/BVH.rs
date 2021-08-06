@@ -15,7 +15,7 @@ impl BvhNode {
     pub fn new(mut list: HittableList, time0: f64, time1: f64) -> Self {
         let len = list.objects.len();
         // Self:BvhNode::new0(&mut list.objects , 0 , len , time0 , time1);
-        return BvhNode::new0(&mut list.objects, 0, len, time0, time1);
+        BvhNode::new0(&mut list.objects, 0, len, time0, time1)
     }
 }
 impl Hittable for BvhNode {
@@ -40,7 +40,7 @@ impl Hittable for BvhNode {
         // output_box.maximum = self.box0.maximum;
         // output_box.minimum = self.box0.minimum;
         *output_box = self.box0;
-        return true;
+        true
     }
 }
 
@@ -160,21 +160,21 @@ impl BvhNode {
         if !a.bounding_box(0.0, 0.0, &mut box_a) || !b.bounding_box(0.0, 0.0, &mut box_b) {
             std::println!("No bounding box in bvh_node constructor.\n");
         }
-        return match axis {
+        match axis {
             0 => box_a.minimum.x < box_b.minimum.x,
             1 => box_a.minimum.y < box_b.minimum.y,
             2 => box_a.minimum.z < box_b.minimum.z,
             _ => true,
-        };
+        }
     }
     pub fn box_x_compare(a: Arc<dyn Hittable>, b: Arc<dyn Hittable>) -> bool {
-        return BvhNode::box_compare(a, b, 0);
+        BvhNode::box_compare(a, b, 0)
     }
     pub fn box_y_compare(a: Arc<dyn Hittable>, b: Arc<dyn Hittable>) -> bool {
-        return BvhNode::box_compare(a, b, 1);
+        BvhNode::box_compare(a, b, 1)
     }
     pub fn box_z_compare(a: Arc<dyn Hittable>, b: Arc<dyn Hittable>) -> bool {
-        return BvhNode::box_compare(a, b, 2);
+        BvhNode::box_compare(a, b, 2)
     }
 }
 

@@ -44,7 +44,7 @@ impl<T: Material + Clone> Hittable for XyRect<T> {
         let vi = (yi - self.y0) / (self.y1 - self.y0);
         let outward_normal = Vec3::new(0.0, 0.0, 1.0);
         let pi = r.at(ti);
-        let front_face = Vec3::dot(r.dir, outward_normal.clone()) < 0.0;
+        let front_face = Vec3::dot(r.dir, outward_normal) < 0.0;
         let mut flag = -1.0;
         if front_face {
             flag = 1.0;
@@ -65,7 +65,7 @@ impl<T: Material + Clone> Hittable for XyRect<T> {
             Vec3::new(self.x0, self.y0, self.k - 0.0001),
             Vec3::new(self.x1, self.y1, self.k + 0.0001),
         );
-        return true;
+        true
     }
 }
 
@@ -127,7 +127,7 @@ impl<T: Material + Clone> Hittable for XzRect<T> {
             Vec3::new(self.x0, self.k - 0.0001, self.z0),
             Vec3::new(self.x1, self.k + 0.0001, self.z1),
         );
-        return true;
+        true
     }
     #[warn(unused_assignments)]
     fn pdf_value(&self, origin: Vec3, v: Vec3) -> f64 {
@@ -161,7 +161,7 @@ impl<T: Material + Clone> Hittable for XzRect<T> {
         let distance_squared = rec.t * rec.t * v.length_squared();
         let cosine = (Vec3::dot(v, rec.normal) / v.length()).abs();
 
-        return distance_squared / (cosine * area);
+        distance_squared / (cosine * area)
     }
 
     fn random(&self, origin: Vec3) -> Vec3 {
@@ -170,7 +170,7 @@ impl<T: Material + Clone> Hittable for XzRect<T> {
             self.k,
             random_double_lim(self.z0, self.z1),
         );
-        return random_point - origin;
+        random_point - origin
     }
 }
 pub struct YzRect<T: Material + Clone> {
@@ -210,7 +210,7 @@ impl<T: Material + Clone> Hittable for YzRect<T> {
         let vi = (zi - self.z0) / (self.z1 - self.z0);
         let pi = r.at(ti);
         let outward_normal = Vec3::new(1.0, 0.0, 0.0);
-        let front_face = Vec3::dot(r.dir, outward_normal.clone()) < 0.0;
+        let front_face = Vec3::dot(r.dir, outward_normal) < 0.0;
         let mut flag = -1.0;
         if front_face {
             flag = 1.0;
@@ -231,7 +231,7 @@ impl<T: Material + Clone> Hittable for YzRect<T> {
             Vec3::new(self.k - 0.0001, self.y0, self.z0),
             Vec3::new(self.k + 0.0001, self.y1, self.z1),
         );
-        return true;
+        true
     }
 }
 #[derive(Copy, Clone)]
@@ -305,6 +305,6 @@ impl<T: Material> Hittable for Triangle<T> {
             f_3_max(self.p0.y, self.p1.y, self.p2.y),
             f_3_max(self.p0.z, self.p1.z, self.p2.z),
         ) - Vec3::new(0.01, 0.01, 0.01);
-        return true;
+        true
     }
 }

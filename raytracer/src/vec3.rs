@@ -21,18 +21,18 @@ impl Ray {
 }
 impl Ray {
     pub fn at(&self, t: f64) -> Vec3 {
-        return self.orig + self.dir * t;
+        self.orig + self.dir * t
     }
 }
 
 impl Vec3 {
     pub fn get(&self, axis: i32) -> f64 {
-        return match axis {
+        match axis {
             0 => self.x,
             1 => self.y,
             2 => self.z,
             _ => 0.0,
-        };
+        }
     }
     pub fn same_side(a: Vec3, b: Vec3, c: Vec3, p: Vec3) -> bool {
         let ab = b - a;
@@ -45,7 +45,7 @@ impl Vec3 {
     }
     pub fn near_zero(&self) -> bool {
         let s: f64 = 1e-8;
-        return self.x < s && self.y < s && self.z < s;
+        self.x < s && self.y < s && self.z < s
     }
     pub fn new(x: f64, y: f64, z: f64) -> Self {
         Self { x, y, z }
@@ -242,30 +242,30 @@ impl DivAssign<f64> for Vec3 {
 
 impl Vec3 {
     pub fn dot(u: Vec3, v: Vec3) -> f64 {
-        return u.x * v.x + u.y * v.y + u.z * v.z;
+        u.x * v.x + u.y * v.y + u.z * v.z
     }
 
     pub fn cross(u: Vec3, v: Vec3) -> Vec3 {
-        return Vec3::new(
+        Vec3::new(
             u.y * v.z - u.z * v.y,
             u.z * v.x - u.x * v.z,
             u.x * v.y - u.y * v.x,
-        );
+        )
     }
 
     pub fn length_squared(&self) -> f64 {
-        return self.x * self.x + self.y * self.y + self.z * self.z;
+        self.x * self.x + self.y * self.y + self.z * self.z
     }
     pub fn length(&self) -> f64 {
         let sqe = Vec3::length_squared(&self);
-        return sqe.sqrt() as f64;
+        sqe.sqrt() as f64
     }
     pub fn unit_vector(v: Vec3) -> Vec3 {
         let divs = Vec3::length(&v);
         if divs == 0.0 {
             return Vec3::new(0.0, 0.0, 0.0);
         }
-        return v / divs;
+        v / divs
     }
 
     pub fn unit(&mut self) {
@@ -288,18 +288,18 @@ impl Vec3 {
         let x = phi.cos() * ((1.0 - z * z).abs().sqrt());
         let y = phi.sin() * ((1.0 - z * z).abs().sqrt());
 
-        return Vec3::new(x, y, z);
+        Vec3::new(x, y, z)
     }
     pub fn random() -> Vec3 {
-        return Vec3::new(random_double(), random_double(), random_double());
+        Vec3::new(random_double(), random_double(), random_double())
     }
 
     pub fn random_limit(min: f64, max: f64) -> Vec3 {
-        return Vec3::new(
+        Vec3::new(
             random_double_lim(min, max),
             random_double_lim(min, max),
             random_double_lim(min, max),
-        );
+        )
     }
     pub fn random_in_unit_sphere() -> Vec3 {
         loop {
@@ -315,26 +315,26 @@ impl Vec3 {
         let a: f64 = random_double_lim(0.0, 2.0 * PI);
         let z: f64 = random_double_lim(-1.0, 1.0);
         let r: f64 = (1.0 - z * z).sqrt();
-        return Vec3::new(r * a.cos(), r * a.sin(), z);
+        Vec3::new(r * a.cos(), r * a.sin(), z)
     }
 
     pub fn random_in_hemisphere(normal: Vec3) -> Vec3 {
         let in_unit_sphere: Vec3 = Vec3::random_in_unit_sphere();
         if Vec3::dot(in_unit_sphere, normal) > 0.0 {
-            return in_unit_sphere;
+            in_unit_sphere
         } else {
-            return Vec3::new(0.0, 0.0, 0.0) - in_unit_sphere;
+            Vec3::new(0.0, 0.0, 0.0) - in_unit_sphere
         }
     }
     pub fn reflect(v: Vec3, n: Vec3) -> Vec3 {
-        return v - n * 2.0 * Vec3::dot(v, n);
+        v - n * 2.0 * Vec3::dot(v, n)
     }
 
     pub fn refract(uv: Vec3, n: Vec3, etai_over_etat: f64) -> Vec3 {
         let cos_theta = Vec3::dot(Vec3::new(0.0, 0.0, 0.0) - uv, n);
         let r_out_perp: Vec3 = (uv + n * cos_theta) * etai_over_etat;
         let r_out_parallel = n * (-((1.0 - r_out_perp.length_squared()).abs().sqrt()));
-        return r_out_perp + r_out_parallel;
+        r_out_perp + r_out_parallel
     }
 
     pub fn random_in_unit_disk() -> Vec3 {

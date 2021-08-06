@@ -32,7 +32,7 @@ impl<T0: Hittable> ConstantMedium<T0, Isotropiuc<SolidColor>> {
         }
     }
 }
-
+#[warn(clippy::question_mark)]
 impl<T0: Hittable, T1: Material> Hittable for ConstantMedium<T0, T1> {
     fn hit(&self, r: Ray, t_min: f64, t_max: f64) -> Option<HitRecord> {
         let rec1 = self.boundary.hit(r, -INFINITY, INFINITY);
@@ -78,7 +78,7 @@ impl<T0: Hittable, T1: Material> Hittable for ConstantMedium<T0, T1> {
     }
 
     fn bounding_box(&self, time0: f64, time1: f64, output_box: &mut Aabb) -> bool {
-        return self.boundary.bounding_box(time0, time1, output_box);
+        self.boundary.bounding_box(time0, time1, output_box)
     }
 
     // fn pdf_value(&self, o: Vec3, v: Vec3) -> f64 {

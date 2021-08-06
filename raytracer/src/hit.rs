@@ -20,7 +20,7 @@ pub struct HitRecord<'a> {
 impl<'a> HitRecord<'a> {
     pub fn set_face_normal(&mut self, r: Ray, outward_normal: Vec3) {
         self.front_face = Vec3::dot(r.dir, outward_normal) < 0.0;
-        if self.front_face == true {
+        if self.front_face {
             self.normal = outward_normal;
         } else {
             self.normal = Vec3::new(0.0, 0.0, 0.0) - outward_normal;
@@ -32,10 +32,10 @@ pub trait Hittable: Send + Sync {
     fn hit(&self, r: Ray, t_min: f64, t_max: f64) -> Option<HitRecord>;
     fn bounding_box(&self, time0: f64, time1: f64, output_box: &mut Aabb) -> bool;
     fn pdf_value(&self, _o: Vec3, _v: Vec3) -> f64 {
-        return 0.0;
+        0.0
     }
     fn random(&self, _o: Vec3) -> Vec3 {
-        return Vec3::new(1.0, 0.0, 0.0);
+        Vec3::new(1.0, 0.0, 0.0)
     }
 }
 
@@ -79,7 +79,7 @@ impl<T: Material> Hittable for Sphere<T> {
             let mut ti: f64 = (-half_b - root) / ai;
             if ti > t_min && ti < t_max {
                 let p = rs.at(ti);
-                let outward_normal = p.sub(self.center.clone()).div(self.radius);
+                let outward_normal = p.sub(self.center).div(self.radius);
                 let mut ui = 0.0;
                 let mut vi = 0.0;
                 Sphere::<Metal>::get_sphere_uv(outward_normal, &mut ui, &mut vi);
@@ -101,7 +101,7 @@ impl<T: Material> Hittable for Sphere<T> {
             ti = (-half_b + root) / ai;
             if ti > t_min && ti < t_max {
                 let pi = rs.at(ti);
-                let outward_normal = pi.sub(self.center.clone()).div(self.radius);
+                let outward_normal = pi.sub(self.center).div(self.radius);
                 let mut ui = 0.0;
                 let mut vi = 0.0;
                 Sphere::<Metal>::get_sphere_uv(outward_normal, &mut ui, &mut vi);
@@ -121,13 +121,13 @@ impl<T: Material> Hittable for Sphere<T> {
                 });
             }
         }
-        return None;
+        None
     }
 
     fn bounding_box(&self, _time0: f64, _time1: f64, output_box: &mut Aabb) -> bool {
         output_box.minimum = self.center - Vec3::new(self.radius, self.radius, self.radius);
         output_box.maximum = self.center + Vec3::new(self.radius, self.radius, self.radius);
-        return true;
+        true
     }
     #[warn(unused_assignments)]
     fn pdf_value(&self, o: Vec3, v: Vec3) -> f64 {
@@ -143,7 +143,7 @@ impl<T: Material> Hittable for Sphere<T> {
         let cos_theta_max = 1.0 - self.radius * self.radius / (self.center - o).length_squared();
         let solid_angle = 2.0 * PI * (1.0 - cos_theta_max);
 
-        return 1.0 / solid_angle;
+        1.0 / solid_angle
     }
     fn random(&self, o: Vec3) -> Vec3 {
         //println!("{:?}",o);
@@ -156,7 +156,7 @@ impl<T: Material> Hittable for Sphere<T> {
         if distance_squared == 0.0 {
             return Vec3::new(1.0, 1.0, 1.0);
         }
-        return uvw.local0(Vec3::random_to_sphere(self.radius, distance_squared));
+        uvw.local0(Vec3::random_to_sphere(self.radius, distance_squared))
     }
 }
 #[allow(clippy::float_cmp)]
@@ -249,7 +249,7 @@ impl Hittable for HittableList {
             }
             first_box = false;
         }
-        return true;
+        true
     }
     fn pdf_value(&self, o: Vec3, v: Vec3) -> f64 {
         let weight = 1.0 / self.objects.len() as f64;
@@ -258,7 +258,7 @@ impl Hittable for HittableList {
         for object in self.objects.iter() {
             sum += weight * object.pdf_value(o, v);
         }
-        return sum;
+        sum
     }
     fn random(&self, o: Vec3) -> Vec3 {
         let int_size = self.objects.len() as i32;
@@ -267,7 +267,7 @@ impl Hittable for HittableList {
         }
         let ran = random_int(0, int_size - 1) as usize;
         let vv = (*self.objects[ran]).random(o);
-        return vv;
+        vv
     }
 }
 
@@ -299,7 +299,7 @@ impl<T: Hittable> Hittable for Translate<T> {
         // rec.set_face_normal(moved_r.clone(), rec.normal);
         //
         // return true;
-        let moved_r = Ray::new(r.orig.sub(self.offset.clone()), r.dir.clone(), r.time);
+        let moved_r = Ray::new(r.orig.sub(self.offset), r.dir, r.time);
         match self.ptr.hit(moved_r, t_min, t_max) {
             Some(rec) => {
                 let front_face = Vec3::dot(r.dir, rec.normal) < 0.0;
@@ -308,7 +308,7 @@ impl<T: Hittable> Hittable for Translate<T> {
                     flag = -1.0;
                 }
                 Some(HitRecord {
-                    p: rec.p.add(self.offset.clone()),
+                    p: rec.p.add(self.offset),
                     normal: rec.normal.mul(flag),
                     front_face,
                     ..rec
@@ -327,7 +327,7 @@ impl<T: Hittable> Hittable for Translate<T> {
             output_box.maximum + self.offset,
         );
 
-        return true;
+        true
     }
     fn pdf_value(&self, o: Vec3, v: Vec3) -> f64 {
         self.ptr.pdf_value(o - self.offset, v)
@@ -426,13 +426,13 @@ impl<T: Hittable> Hittable for RotateY<T> {
         };
         match self.ptr.hit(rotated_r, t_min, t_max) {
             Some(rec) => {
-                let mut p = rec.p.clone();
-                let mut normal = rec.normal.clone();
+                let mut p = rec.p;
+                let mut normal = rec.normal;
                 p.x = self.cos_theta * rec.p.x + self.sin_theta * rec.p.z;
                 p.z = -self.sin_theta * rec.p.x + self.cos_theta * rec.p.z;
                 normal.x = self.cos_theta * rec.normal.x + self.sin_theta * rec.normal.z;
                 normal.z = -self.sin_theta * rec.normal.x + self.cos_theta * rec.normal.z;
-                let front_face = Vec3::dot(rotated_r.dir, normal.clone()) < 0.0;
+                let front_face = Vec3::dot(rotated_r.dir, normal) < 0.0;
                 let mut flag = -1.0;
                 if front_face {
                     flag = 1.0;
@@ -467,7 +467,7 @@ impl<T: Hittable> Hittable for RotateY<T> {
 
     fn bounding_box(&self, _time0: f64, _time1: f64, output_box: &mut Aabb) -> bool {
         *output_box = self.bbox;
-        return self.hasbox;
+        self.hasbox
     }
 }
 
@@ -498,6 +498,6 @@ impl<T: Hittable> Hittable for FlipFace<T> {
     }
 
     fn bounding_box(&self, time0: f64, time1: f64, output_box: &mut Aabb) -> bool {
-        return self.ptr.bounding_box(time0, time1, output_box);
+        self.ptr.bounding_box(time0, time1, output_box)
     }
 }

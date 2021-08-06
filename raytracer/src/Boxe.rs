@@ -4,7 +4,7 @@ use crate::material::Material;
 use crate::AABB::Aabb;
 use crate::{Ray, Vec3};
 use std::option::Option::Some;
-
+#[warn(clippy::type_complexity)]
 pub struct Boxes<T: Material + Clone> {
     pub box_min: Vec3,
     pub box_max: Vec3,
@@ -27,7 +27,7 @@ impl<T: Material + Clone> Boxes<T> {
                 XzRect::new(p0.x, p1.x, p0.z, p1.z, p1.y, ptr.clone()),
                 XzRect::new(p0.x, p1.x, p0.z, p1.z, p0.y, ptr.clone()),
                 YzRect::new(p0.y, p1.y, p0.z, p1.z, p1.x, ptr.clone()),
-                YzRect::new(p0.y, p1.y, p0.z, p1.z, p0.x, ptr.clone()),
+                YzRect::new(p0.y, p1.y, p0.z, p1.z, p0.x, ptr),
             ),
             box_min: p0,
             box_max: p1,
@@ -68,6 +68,6 @@ impl<T: Material + Clone> Hittable for Boxes<T> {
 
     fn bounding_box(&self, _time0: f64, _time1: f64, output_box: &mut Aabb) -> bool {
         *output_box = Aabb::new(self.box_min, self.box_max);
-        return true;
+        true
     }
 }

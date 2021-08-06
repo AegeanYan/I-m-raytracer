@@ -17,7 +17,7 @@ pub fn random_cosine_direction() -> Vec3 {
     let x = phi.cos() * r2.sqrt();
     let y = phi.sin() * r2.sqrt();
 
-    return Vec3::new(x, y, z);
+    Vec3::new(x, y, z)
 }
 
 pub struct CosinePdf {
@@ -42,14 +42,14 @@ impl Pdf for CosinePdf {
     fn value(&self, direction: &mut Vec3) -> f64 {
         let cosine = Vec3::dot(Vec3::unit_vector(*direction), self.uvw.axis[2]);
         if cosine <= 0.0 {
-            return 0.0;
+            0.0
         } else {
-            return cosine / PI;
+            cosine / PI
         }
     }
 
     fn generate(&self) -> Vec3 {
-        return self.uvw.local0(random_cosine_direction());
+        self.uvw.local0(random_cosine_direction())
     }
 }
 
@@ -66,11 +66,11 @@ impl<'a, T: Hittable> HittablePdf<'a, T> {
 
 impl<'a, T: Hittable> Pdf for HittablePdf<'a, T> {
     fn value(&self, direction: &mut Vec3) -> f64 {
-        return self.ptr.pdf_value(self.o, *direction);
+        self.ptr.pdf_value(self.o, *direction)
     }
 
     fn generate(&self) -> Vec3 {
-        return self.ptr.random(self.o);
+        self.ptr.random(self.o)
     }
 }
 
@@ -98,7 +98,7 @@ impl<'a, T1: Pdf, T2: Pdf> Pdf for MixturePdf<'a, T1, T2> {
         } else {
             vv = self.p2.generate();
         }
-        return vv;
+        vv
     }
 }
 
