@@ -135,7 +135,7 @@ impl<T: Material> Hittable for Sphere<T> {
         //     return 0.0;
         // };
         match self.hit(Ray::new(o, v, 0.0), 0.001, INFINITY) {
-            Some(rec_) => {}
+            Some(_rec_) => {}
             None => {
                 return 0.0;
             }
